@@ -16,16 +16,6 @@ type Job interface {
 	ErrOutput() <-chan string
 }
 
-type TaskFunc func()
-
-func (tf TaskFunc) Run() {
-	tf()
-}
-
-func (tf TaskFunc) Content() string {
-	return "this is a go func"
-}
-
 type Task struct {
 	id            int
 	taskName      string // 任务名称
