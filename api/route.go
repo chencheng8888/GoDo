@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/chencheng8888/GoDo/task"
+	"github.com/chencheng8888/GoDo/scheduler"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,7 +21,7 @@ func InitRoutes(r *gin.Engine, initer ...RouteIniter) {
 	}
 }
 
-func InitTaskRoute(r *gin.Engine, scheduler *task.Scheduler) {
+func InitTaskRoute(r *gin.Engine, scheduler *scheduler.Scheduler) {
 	g := r.Group("/api/v1/tasks")
 	{
 		g.GET("/list/:name")
