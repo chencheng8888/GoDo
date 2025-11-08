@@ -38,7 +38,7 @@ func WireNewApp(configConfig *config.Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	engine := api.NewGinEngine(taskController)
+	engine := api.NewGinEngine(taskController, sugaredLogger)
 	apiAPI := api.NewAPI(serverConfig, engine, sugaredLogger)
 	app := NewApp(apiAPI, schedulerScheduler)
 	return app, nil

@@ -39,6 +39,7 @@ func NewAPI(sc *config.ServerConfig, e *gin.Engine, log *zap.SugaredLogger) *API
 }
 
 func (a *API) Run() {
+	a.log.Infof("👉starting server at %s...", a.server.Addr)
 	if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		panic("server run failed:" + err.Error())
 	}

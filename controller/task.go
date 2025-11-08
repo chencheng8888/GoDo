@@ -20,16 +20,14 @@ type TaskController struct {
 }
 
 func NewTaskController(s *scheduler.Scheduler, cf *config.ScheduleConfig) (*TaskController, error) {
-	dir := filepath.Dir(cf.WorkDir)
-
-	err := pkg.CreateDirIfNotExist(dir)
+	err := pkg.CreateDirIfNotExist(cf.WorkDir)
 	if err != nil {
 		return nil, err
 	}
 
 	return &TaskController{
 		scheduler: s,
-		workDir:   dir,
+		workDir:   cf.WorkDir,
 	}, nil
 }
 
