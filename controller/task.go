@@ -60,7 +60,7 @@ func (tc *TaskController) UploadScript(c *gin.Context) {
 	fileName := fmt.Sprintf("%d_%s", time.Now().UnixMilli(), filepath.Base(file.Filename))
 	savePath := filepath.Join(tc.workDir, fileName)
 
-	err = c.SaveUploadedFile(file, savePath)
+	err = c.SaveUploadedFile(file, savePath, 0755)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.Error(response.FileSaveFailedCode, response.FileSaveFailedMsg))
 		return
