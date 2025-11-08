@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"github.com/chencheng8888/GoDo/config"
 	"github.com/chencheng8888/GoDo/pkg/response"
 	"github.com/chencheng8888/GoDo/scheduler"
 	"github.com/chencheng8888/GoDo/scheduler/job"
@@ -15,6 +16,13 @@ type TaskController struct {
 	scheduler *scheduler.Scheduler
 
 	workDir string
+}
+
+func NewTaskController(s *scheduler.Scheduler, cf *config.ScheduleConfig) *TaskController {
+	return &TaskController{
+		scheduler: s,
+		workDir:   cf.WorkDir,
+	}
 }
 
 type ListTaskResponseData struct {

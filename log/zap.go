@@ -2,11 +2,16 @@ package log
 
 import (
 	"github.com/chencheng8888/GoDo/config"
+	"github.com/google/wire"
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
 	"path/filepath"
+)
+
+var (
+	ProviderSet = wire.NewSet(NewZapSugaredLogger)
 )
 
 func NewZapSugaredLogger(c *config.LogConfig) (*zap.SugaredLogger, error) {

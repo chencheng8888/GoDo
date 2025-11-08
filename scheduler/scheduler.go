@@ -3,8 +3,14 @@ package scheduler
 import (
 	"fmt"
 	"github.com/chencheng8888/GoDo/config"
+	"github.com/google/wire"
 	"github.com/robfig/cron/v3"
+	"go.uber.org/zap"
 	"sync"
+)
+
+var (
+	ProviderSet = wire.NewSet(NewScheduler, NewLogMiddleware, NewTaskLogMiddleware)
 )
 
 type Scheduler struct {
@@ -12,9 +18,11 @@ type Scheduler struct {
 	mu       sync.RWMutex
 	c        *cron.Cron
 	executor Executor
+
+	log *zap.SugaredLogger
 }
 
-func NewScheduler(conf *config.ScheduleConfig, logMiddleware *LogMiddleware, taskLogMiddleware *TaskLogMiddleware) *Scheduler {
+func NewScheduler(conf *config.ScheduleConfig, logMiddleware *LogMiddleware, taskLogMiddleware *TaskLogMiddleware, log *zap.SugaredLogger) *Scheduler {
 	var c *cron.Cron
 	if conf.WithSeconds {
 		c = cron.New(cron.WithSeconds())
@@ -28,6 +36,7 @@ func NewScheduler(conf *config.ScheduleConfig, logMiddleware *LogMiddleware, tas
 		tasks:    make(map[int]Task),
 		c:        c,
 		executor: executor,
+		log:      log,
 	}
 }
 
@@ -57,6 +66,7 @@ func (s *Scheduler) ListTasks(userName string) []Task {
 
 		tasks = append(tasks, t)
 	}
+	s.log.Infof("📋 Listed tasks for user:%s,res is [%v]", userName, tasks)
 	return tasks
 }
 
@@ -72,10 +82,12 @@ func (s *Scheduler) RemoveTaskById(id int) error {
 }
 
 func (s *Scheduler) Start() {
+	s.log.Info("🚩Task scheduler start")
 	s.c.Start()
 }
 
 func (s *Scheduler) Stop() {
 	ctx := s.c.Stop()
 	<-ctx.Done()
+	s.log.Info("✔️Task scheduler stopped")
 }
