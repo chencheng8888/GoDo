@@ -53,7 +53,7 @@ func getEncoder(format string) zapcore.Encoder {
 
 // getLogWriter 获取日志输出方式  日志文件 控制台
 func getLogWriter(logPath, fileName string, maxSize, maxAge int, compress, stdout bool) (zapcore.WriteSyncer, error) {
-	err := pkg.CreateDirIfNotExist(filepath.Dir(logPath))
+	err := pkg.CreateDirIfNotExist(logPath)
 	if err != nil {
 		return nil, err
 	}
