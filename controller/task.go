@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"github.com/chencheng8888/GoDo/config"
+	"github.com/chencheng8888/GoDo/pkg"
 	"github.com/chencheng8888/GoDo/pkg/response"
 	"github.com/chencheng8888/GoDo/scheduler"
 	"github.com/chencheng8888/GoDo/scheduler/job"
@@ -18,11 +19,18 @@ type TaskController struct {
 	workDir string
 }
 
-func NewTaskController(s *scheduler.Scheduler, cf *config.ScheduleConfig) *TaskController {
+func NewTaskController(s *scheduler.Scheduler, cf *config.ScheduleConfig) (*TaskController, error) {
+	dir := filepath.Dir(cf.WorkDir)
+
+	err := pkg.CreateDirIfNotExist(dir)
+	if err != nil {
+		return nil, err
+	}
+
 	return &TaskController{
 		scheduler: s,
-		workDir:   cf.WorkDir,
-	}
+		workDir:   dir,
+	}, nil
 }
 
 type ListTaskResponseData struct {

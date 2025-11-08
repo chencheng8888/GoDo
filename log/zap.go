@@ -2,6 +2,7 @@ package log
 
 import (
 	"github.com/chencheng8888/GoDo/config"
+	"github.com/chencheng8888/GoDo/pkg"
 	"github.com/google/wire"
 	"github.com/natefinch/lumberjack"
 	"go.uber.org/zap"
@@ -52,16 +53,9 @@ func getEncoder(format string) zapcore.Encoder {
 
 // getLogWriter 获取日志输出方式  日志文件 控制台
 func getLogWriter(logPath, fileName string, maxSize, maxAge int, compress, stdout bool) (zapcore.WriteSyncer, error) {
-	exist, err := isPathExist(logPath)
+	err := pkg.CreateDirIfNotExist(filepath.Dir(logPath))
 	if err != nil {
 		return nil, err
-	}
-
-	// 判断日志路径是否存在，如果不存在就创建
-	if !exist {
-		if err := os.MkdirAll(logPath, os.ModePerm); err != nil {
-			return nil, err
-		}
 	}
 
 	// 日志文件 与 日志切割 配置
@@ -73,17 +67,6 @@ func getLogWriter(logPath, fileName string, maxSize, maxAge int, compress, stdou
 		// 日志只输出到日志文件
 		return zapcore.AddSync(lumberJackLogger), nil
 	}
-}
-
-func isPathExist(filePath string) (bool, error) {
-	_, err := os.Stat(filePath)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsExist(err) {
-		return false, nil
-	}
-	return false, err
 }
 
 func newLumberjackLogger(logPath, logFileName string, fileMaxSize, logMaxAge int, logCompress bool) *lumberjack.Logger {
