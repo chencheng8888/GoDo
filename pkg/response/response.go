@@ -1,10 +1,5 @@
 package response
 
-const (
-	SuccessCode = 200
-	SuccessMsg  = "success"
-)
-
 type Response struct {
 	Code int         `json:"code"`
 	Msg  string      `json:"msg"`

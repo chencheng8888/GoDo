@@ -17,9 +17,11 @@ type ShellJob struct {
 	timeout   time.Duration
 	output    chan string // 标准输出
 	errOutput chan string // 错误输出
+
+	workDir string // 工作目录
 }
 
-func NewShellJob(useShell bool, timeOut time.Duration, command string, args ...string) *ShellJob {
+func NewShellJob(useShell bool, timeOut time.Duration, workDir, command string, args ...string) *ShellJob {
 	return &ShellJob{
 		command:   command,
 		args:      args,
@@ -27,6 +29,7 @@ func NewShellJob(useShell bool, timeOut time.Duration, command string, args ...s
 		timeout:   timeOut,
 		output:    make(chan string, 100),
 		errOutput: make(chan string, 100),
+		workDir:   workDir,
 	}
 }
 
@@ -64,6 +67,10 @@ func (s *ShellJob) Run() {
 	} else {
 		// --- 直接运行可执行文件 (原有的方式) ---
 		cmd = exec.CommandContext(ctx, s.command, s.args...)
+	}
+
+	if len(s.workDir) > 0 {
+		cmd.Dir = s.workDir
 	}
 
 	var stdoutBuf, stderrBuf bytes.Buffer

@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/chencheng8888/GoDo/scheduler"
+	"github.com/chencheng8888/GoDo/controller"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,9 +21,11 @@ func InitRoutes(r *gin.Engine, initer ...RouteIniter) {
 	}
 }
 
-func InitTaskRoute(r *gin.Engine, scheduler *scheduler.Scheduler) {
+func InitTaskRoute(r *gin.Engine, taskController *controller.TaskController) {
 	g := r.Group("/api/v1/tasks")
 	{
-		g.GET("/list/:name")
+		g.GET("/list/:name", taskController.ListTasks)
+		g.POST("/upload_script", taskController.UploadScript)
+		g.POST("/add_shell_task", taskController.AddShellTask)
 	}
 }
