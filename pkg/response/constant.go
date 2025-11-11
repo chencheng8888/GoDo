@@ -12,4 +12,7 @@ const (
 
 	FileSaveFailedCode = 4003
 	FileSaveFailedMsg  = "file save failed"
+
+	DeleteTaskFailedCode = 4004
+	DeleteTaskFailedMsg  = "delete task failed"
 )

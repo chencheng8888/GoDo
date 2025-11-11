@@ -100,3 +100,22 @@ func (tc *TaskController) AddShellTask(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, response.Success(AddShellTaskResponseData{TaskId: taskId}))
 }
+
+type DeleteTaskRequest struct {
+	UserName string `json:"user_name"`
+	TaskID   int    `json:"task_id"`
+}
+
+func (tc *TaskController) DeleteTask(c *gin.Context) {
+	var req DeleteTaskRequest
+	if err := c.ShouldBindBodyWithJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.Error(response.InvalidRequestCode, fmt.Sprintf("%s:%s", response.InvalidRequestMsg, err.Error())))
+		return
+	}
+
+	err := tc.scheduler.RemoveTask(req.UserName, req.TaskID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.Error(response.DeleteTaskFailedCode, fmt.Sprintf("%s:%s", response.DeleteTaskFailedMsg, err.Error())))
+	}
+	c.JSON(http.StatusOK, response.Success(nil))
+}

@@ -39,6 +39,7 @@ func InitTaskRoute(taskController *controller.TaskController) RouteIniter {
 			g.GET("/list/:name", taskController.ListTasks)
 			g.POST("/upload_script", taskController.UploadScript)
 			g.POST("/add_shell_task", taskController.AddShellTask)
+			g.DELETE("/delete", taskController.DeleteTask)
 		}
 	})
 }

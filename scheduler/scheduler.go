@@ -65,7 +65,7 @@ func (s *Scheduler) addTask(t Task, addCronOnly bool) (int, error) {
 		err = s.taskInfoDao.CreateTaskInfo(newModel(t))
 		if err != nil {
 			// rollback cron job addition
-			_ = s.removeTaskByIds(int(id), true)
+			s.c.Remove(cron.EntryID(id))
 			return -1, err
 		}
 	}
@@ -93,19 +93,13 @@ func (s *Scheduler) ListTasks(userName string) []Task {
 	return tasks
 }
 
-func (s *Scheduler) RemoveTaskById(id int) error {
-	return s.removeTaskByIds(id, false)
-}
-
-func (s *Scheduler) removeTaskByIds(id int, removeCronOnly bool) error {
-	if !removeCronOnly {
-		err := s.taskInfoDao.DeleteTaskInfoByTaskId(id)
-		if err != nil {
-			s.log.Errorf("delete task info by task_id=%d error: %s", id, err)
-			return err
-		}
+func (s *Scheduler) RemoveTask(userName string, taskId int) error {
+	err := s.taskInfoDao.DeleteTaskInfoByTaskId(userName, taskId)
+	if err != nil {
+		s.log.Errorf("delete task info by (user_name=%s and task_id=%d) error: %s", userName, taskId, err)
+		return err
 	}
-	s.c.Remove(cron.EntryID(id))
+	s.c.Remove(cron.EntryID(taskId))
 	return nil
 }
 
