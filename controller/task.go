@@ -116,6 +116,7 @@ func (tc *TaskController) DeleteTask(c *gin.Context) {
 	err := tc.scheduler.RemoveTask(req.UserName, req.TaskID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.Error(response.DeleteTaskFailedCode, fmt.Sprintf("%s:%s", response.DeleteTaskFailedMsg, err.Error())))
+		return
 	}
 	c.JSON(http.StatusOK, response.Success(nil))
 }

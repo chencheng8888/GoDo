@@ -16,6 +16,7 @@ var (
 
 func NewDB(cf *config.DBConfig, log *zap.SugaredLogger) (*gorm.DB, error) {
 	logger := zapgorm2.New(log.Desugar())
+	logger.SetAsDefault()
 	db, err := gorm.Open(mysql.Open(cf.Addr), &gorm.Config{
 		Logger: logger,
 	})
