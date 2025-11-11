@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ProviderSet = wire.NewSet(NewDB, NewTaskLogDao)
+	ProviderSet = wire.NewSet(NewDB, NewTaskLogDao, NewTaskInfoDao)
 )
 
 func NewDB(cf *config.DBConfig, log *zap.SugaredLogger) (*gorm.DB, error) {
@@ -22,7 +22,7 @@ func NewDB(cf *config.DBConfig, log *zap.SugaredLogger) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = db.AutoMigrate(&model.TaskLog{})
+	err = db.AutoMigrate(&model.TaskLog{}, &model.TaskInfo{})
 	if err != nil {
 		return nil, err
 	}

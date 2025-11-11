@@ -3,6 +3,7 @@ package job
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"runtime"
@@ -11,46 +12,50 @@ import (
 )
 
 type ShellJob struct {
-	command   string   // shell 命令
-	args      []string // 命令参数
-	useShell  bool     //是否通过系统默认 Shell 执行 (true: 可以运行内建命令和脚本, false: 直接运行可执行文件)
-	timeout   time.Duration
-	output    chan string // 标准输出
-	errOutput chan string // 错误输出
+	Command   string        `json:"command"`   // shell 命令
+	Args      []string      `json:"args"`      // 命令参数
+	UseShell  bool          `json:"use_shell"` //是否通过系统默认 Shell 执行 (true: 可以运行内建命令和脚本, false: 直接运行可执行文件)
+	Timeout   time.Duration `json:"timeout"`
+	output    chan string   // 标准输出
+	errOutput chan string   // 错误输出
 
-	workDir string // 工作目录
+	WorkDir string `json:"work_dir"` // 工作目录
 }
 
 func NewShellJob(useShell bool, timeOut time.Duration, workDir, command string, args ...string) *ShellJob {
 	return &ShellJob{
-		command:   command,
-		args:      args,
-		useShell:  useShell,
-		timeout:   timeOut,
+		Command:   command,
+		Args:      args,
+		UseShell:  useShell,
+		Timeout:   timeOut,
 		output:    make(chan string, 100),
 		errOutput: make(chan string, 100),
-		workDir:   workDir,
+		WorkDir:   workDir,
 	}
 }
 
+func (s *ShellJob) Type() string {
+	return ShellJobType
+}
+
 func (s *ShellJob) Run() {
-	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), s.Timeout)
 	defer cancel()
 
 	var cmd *exec.Cmd
 
-	if s.useShell {
+	if s.UseShell {
 		// --- 明确指定终端/Shell 解释器 ---
 		var shell string
 		var shellArgs []string
 
-		// 将 command 和 args 合并成一个完整的命令字符串
+		// 将 Command 和 Args 合并成一个完整的命令字符串
 		// 这样可以处理管道、重定向、Shell 变量等复杂的 Shell 语法
 		var fullCommand string
-		if len(s.args) > 0 {
-			fullCommand = s.command + " " + strings.Join(s.args, " ")
+		if len(s.Args) > 0 {
+			fullCommand = s.Command + " " + strings.Join(s.Args, " ")
 		} else {
-			fullCommand = s.command
+			fullCommand = s.Command
 		}
 
 		if runtime.GOOS == "windows" {
@@ -66,11 +71,11 @@ func (s *ShellJob) Run() {
 		cmd = exec.CommandContext(ctx, shell, shellArgs...)
 	} else {
 		// --- 直接运行可执行文件 (原有的方式) ---
-		cmd = exec.CommandContext(ctx, s.command, s.args...)
+		cmd = exec.CommandContext(ctx, s.Command, s.Args...)
 	}
 
-	if len(s.workDir) > 0 {
-		cmd.Dir = s.workDir
+	if len(s.WorkDir) > 0 {
+		cmd.Dir = s.WorkDir
 	}
 
 	var stdoutBuf, stderrBuf bytes.Buffer
@@ -87,15 +92,11 @@ func (s *ShellJob) Run() {
 		if stderrStr == "" {
 			stderrStr = err.Error()
 		}
-		s.errOutput <- fmt.Sprintf("command error: %v\n%s", err, stderrStr)
+		s.errOutput <- fmt.Sprintf("Command error: %v\n%s", err, stderrStr)
 		return
 	}
 
 	s.output <- stdoutStr
-}
-
-func (s *ShellJob) Content() string {
-	return fmt.Sprintf("shell job: [command:%s, args:%v, useShell:%v, timeOut:%v]", s.command, s.args, s.useShell, s.timeout)
 }
 
 func (s *ShellJob) Output() <-chan string {
@@ -104,4 +105,23 @@ func (s *ShellJob) Output() <-chan string {
 
 func (s *ShellJob) ErrOutput() <-chan string {
 	return s.errOutput
+}
+
+func (s *ShellJob) ToJson() string {
+	res, _ := json.Marshal(s)
+	return string(res)
+}
+
+func (s *ShellJob) UnmarshalFromJson(jsonStr string) error {
+	if s == nil {
+		return fmt.Errorf("cannot unmarshall from json: nil pointer")
+	}
+
+	err := json.Unmarshal([]byte(jsonStr), s)
+	if err != nil {
+		return err
+	}
+	s.output = make(chan string, 100)
+	s.errOutput = make(chan string, 100)
+	return nil
 }

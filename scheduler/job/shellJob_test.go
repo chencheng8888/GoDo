@@ -22,7 +22,7 @@ func TestShellJob_Run(t *testing.T) {
 		shouldError bool
 	}{
 		{
-			name: "Test Echo command",
+			name: "Test Echo Command",
 			fields: fields{
 				command:   "echo",
 				args:      []string{"Hello, World!"},
@@ -34,7 +34,7 @@ func TestShellJob_Run(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			name: "Test Go command",
+			name: "Test Go Command",
 			fields: fields{
 				command:   "go",
 				args:      []string{"run", "./test/test.go"},
@@ -46,7 +46,7 @@ func TestShellJob_Run(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			name: "Test TimeOut command",
+			name: "Test TimeOut Command",
 			fields: fields{
 				command:   "go",
 				args:      []string{"run", "./test/test.go"},
@@ -58,7 +58,7 @@ func TestShellJob_Run(t *testing.T) {
 			shouldError: true,
 		},
 		{
-			name: "Test Non-existent command",
+			name: "Test Non-existent Command",
 			fields: fields{
 				command:   "nonexistentcommand",
 				args:      []string{},
@@ -73,10 +73,10 @@ func TestShellJob_Run(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &ShellJob{
-				command:   tt.fields.command,
-				args:      tt.fields.args,
-				useShell:  tt.fields.useShell,
-				timeout:   tt.fields.timeOut,
+				Command:   tt.fields.command,
+				Args:      tt.fields.args,
+				UseShell:  tt.fields.useShell,
+				Timeout:   tt.fields.timeOut,
 				output:    tt.fields.output,
 				errOutput: tt.fields.errOutput,
 			}
@@ -98,7 +98,7 @@ func TestShellJob_Run(t *testing.T) {
 					t.Logf("Received expected output: %s", out)
 				case errOutput := <-s.ErrOutput():
 					// 如果收到了错误，则测试失败
-					t.Fatalf("Unexpected command error: %s", errOutput)
+					t.Fatalf("Unexpected Command error: %s", errOutput)
 				}
 			}
 		})

@@ -57,7 +57,7 @@ func (tc *TaskController) UploadScript(c *gin.Context) {
 		return
 	}
 
-	fileName := fmt.Sprintf("%d_%s", time.Now().UnixMilli(), filepath.Base(file.Filename))
+	fileName := fmt.Sprintf("%d-%s", time.Now().UnixMilli(), filepath.Base(file.Filename))
 	savePath := filepath.Join(tc.workDir, fileName)
 
 	err = c.SaveUploadedFile(file, savePath, 0755)

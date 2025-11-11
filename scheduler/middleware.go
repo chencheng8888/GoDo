@@ -40,13 +40,13 @@ func (tl *TaskLogMiddleware) Handler(next Executor) Executor {
 		taskLog := model.TaskLog{
 			TaskId:    t.id,
 			Name:      t.taskName,
-			Content:   t.f.Content(),
+			Content:   t.f.ToJson(),
 			Output:    result.Output,
 			ErrOutput: result.ErrOutput,
 			StartTime: result.StartTime,
 			EndTime:   result.EndTime,
 		}
-		err := tl.taskLogDao.CreateTaskLog(taskLog)
+		err := tl.taskLogDao.CreateTaskLog(&taskLog)
 		if err != nil {
 			tl.log.Errorf("failed to create task log for task %+v: %v", taskLog, err)
 		}

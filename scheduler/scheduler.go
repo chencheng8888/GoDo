@@ -1,12 +1,12 @@
 package scheduler
 
 import (
-	"fmt"
 	"github.com/chencheng8888/GoDo/config"
+	"github.com/chencheng8888/GoDo/dao"
+	"github.com/chencheng8888/GoDo/model"
 	"github.com/google/wire"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
-	"sync"
 )
 
 var (
@@ -14,15 +14,14 @@ var (
 )
 
 type Scheduler struct {
-	tasks    map[int]Task
-	mu       sync.RWMutex
 	c        *cron.Cron
 	executor Executor
 
-	log *zap.SugaredLogger
+	log         *zap.SugaredLogger
+	taskInfoDao *dao.TaskInfoDao
 }
 
-func NewScheduler(conf *config.ScheduleConfig, logMiddleware *LogMiddleware, taskLogMiddleware *TaskLogMiddleware, log *zap.SugaredLogger) *Scheduler {
+func NewScheduler(conf *config.ScheduleConfig, logMiddleware *LogMiddleware, taskLogMiddleware *TaskLogMiddleware, taskInfoDao *dao.TaskInfoDao, log *zap.SugaredLogger) *Scheduler {
 	var c *cron.Cron
 	if conf.WithSeconds {
 		c = cron.New(cron.WithSeconds())
@@ -32,18 +31,23 @@ func NewScheduler(conf *config.ScheduleConfig, logMiddleware *LogMiddleware, tas
 
 	executor := Chain(BaseExecutor, logMiddleware.Handler, taskLogMiddleware.Handler)
 
-	return &Scheduler{
-		tasks:    make(map[int]Task),
-		c:        c,
-		executor: executor,
-		log:      log,
+	s := &Scheduler{
+		c:           c,
+		executor:    executor,
+		log:         log,
+		taskInfoDao: taskInfoDao,
 	}
+
+	// Initialize tasks
+	s.initializeTasks()
+	return s
 }
 
 func (s *Scheduler) AddTask(t Task) (int, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	return s.addTask(t, false)
+}
 
+func (s *Scheduler) addTask(t Task, addCronOnly bool) (int, error) {
 	id, err := s.c.AddFunc(t.scheduledTime, func() {
 		s.executor(t)
 	})
@@ -51,33 +55,52 @@ func (s *Scheduler) AddTask(t Task) (int, error) {
 		return -1, err
 	}
 	t.id = int(id)
-	s.tasks[int(id)] = t
+
+	if !addCronOnly {
+		err = s.taskInfoDao.CreateTaskInfo(newModel(t))
+		if err != nil {
+			// rollback cron job addition
+			_ = s.removeTaskByIds(int(id), true)
+			return -1, err
+		}
+	}
+
 	return int(id), nil
 }
 
 func (s *Scheduler) ListTasks(userName string) []Task {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	var tasks []Task
-	for _, t := range s.tasks {
-		if t.ownerName != userName {
+	taskInfos, err := s.taskInfoDao.GetTaskInfosByOwnerName(userName)
+	if err != nil {
+		s.log.Errorf("get task info by owner_name=%s error: %s", userName, err)
+		return []Task{}
+	}
+
+	for _, taskInfo := range taskInfos {
+		task, err := NewTaskFromModel(taskInfo)
+		if err != nil {
+			s.log.Errorf("new task from model failed: %s", err)
 			continue
 		}
-
-		tasks = append(tasks, t)
+		tasks = append(tasks, task)
 	}
 	s.log.Infof("📋 Listed tasks for user:%s,res is [%v]", userName, tasks)
 	return tasks
 }
 
 func (s *Scheduler) RemoveTaskById(id int) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if _, ok := s.tasks[id]; !ok {
-		return fmt.Errorf("scheduler with id %d not found", id)
+	return s.removeTaskByIds(id, false)
+}
+
+func (s *Scheduler) removeTaskByIds(id int, removeCronOnly bool) error {
+	if !removeCronOnly {
+		err := s.taskInfoDao.DeleteTaskInfoByTaskId(id)
+		if err != nil {
+			s.log.Errorf("delete task info by task_id=%d error: %s", id, err)
+			return err
+		}
 	}
 	s.c.Remove(cron.EntryID(id))
-	delete(s.tasks, id)
 	return nil
 }
 
@@ -90,4 +113,42 @@ func (s *Scheduler) Stop() {
 	ctx := s.c.Stop()
 	<-ctx.Done()
 	s.log.Info("✔️Task scheduler stopped")
+}
+
+func (s *Scheduler) initializeTasks() {
+	s.log.Infof("🤖start initialize tasks from db...")
+
+	taskInfos, err := s.taskInfoDao.ListTaskInfo()
+	if err != nil {
+		s.log.Errorf("initialize tasks:failed to get task info from db: %v", err)
+	}
+	for _, taskInfo := range taskInfos {
+		task, err := NewTaskFromModel(taskInfo)
+		if err != nil {
+			s.log.Errorf("initialize tasks:failed to create task from model[%v]: %v", taskInfo, err)
+			continue
+		}
+		taskId, err := s.addTask(task, true)
+		if err != nil {
+			s.log.Errorf("initialize tasks:failed to add task[%v]: %v", task, err)
+			continue
+		}
+		err = s.taskInfoDao.UpdateTaskIdByID(taskInfo.ID, taskId)
+		if err != nil {
+			s.log.Errorf("initialize tasks:failed to update task info: %v", err)
+		}
+	}
+	s.log.Infof("✅initialize tasks from db finished")
+}
+
+func newModel(task Task) *model.TaskInfo {
+	return &model.TaskInfo{
+		TaskId:        task.id,
+		TaskName:      task.taskName,
+		OwnerName:     task.ownerName,
+		ScheduledTime: task.scheduledTime,
+		Description:   task.description,
+		JobType:       task.f.Type(),
+		Job:           task.f.ToJson(),
+	}
 }
