@@ -69,7 +69,7 @@ func (s *Scheduler) addTask(t Task, addCronOnly bool) (int, error) {
 			return -1, err
 		}
 	}
-
+	s.log.Infof("add a task: %+v", t)
 	return int(id), nil
 }
 

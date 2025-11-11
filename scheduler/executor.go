@@ -47,12 +47,10 @@ func readChannel(ch <-chan string) string {
 }
 
 func Chain(executor Executor, middlewares ...Middleware) Executor {
-	return func(t Task) TaskResult {
-		// 从最后一个中间件开始，逐步将 executor 包装起来
-		for i := len(middlewares) - 1; i >= 0; i-- {
-			executor = middlewares[i](executor)
-		}
-		// 最终调用最外层的 executor
-		return executor(t)
+	// 从最后一个中间件开始，逐步将 executor 包装起来
+	for i := len(middlewares) - 1; i >= 0; i-- {
+		executor = middlewares[i](executor)
 	}
+	// 最终调用最外层的 executor
+	return executor
 }

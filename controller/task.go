@@ -70,14 +70,14 @@ func (tc *TaskController) UploadScript(c *gin.Context) {
 }
 
 type AddShellTaskRequest struct {
-	TaskName      string   `json:"task_name"`
-	OwnerName     string   `json:"owner_name"`
-	Description   string   `json:"description"`
-	ScheduledTime string   `json:"scheduled_time"`
-	Command       string   `json:"command"`
-	Args          []string `json:"args"`
-	UseShell      bool     `json:"use_shell"`
-	Timeout       int      `json:"timeout"`
+	TaskName      string   `json:"task_name" binding:"required"`
+	OwnerName     string   `json:"owner_name" binding:"required"`
+	Description   string   `json:"description" binding:"required"`
+	ScheduledTime string   `json:"scheduled_time" binding:"required,cron"`
+	Command       string   `json:"command" binding:"required"`
+	Args          []string `json:"args" binding:"omitempty"`
+	UseShell      bool     `json:"use_shell" binding:"required"`
+	Timeout       int      `json:"timeout" binding:"required,max=7200,gt=0"` // in seconds, max 2 hours
 }
 
 type AddShellTaskResponseData struct {
