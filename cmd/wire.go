@@ -8,7 +8,7 @@ import (
 	"github.com/chencheng8888/GoDo/config"
 	"github.com/chencheng8888/GoDo/controller"
 	"github.com/chencheng8888/GoDo/dao"
-	"github.com/chencheng8888/GoDo/log"
+	"github.com/chencheng8888/GoDo/pkg/log"
 	"github.com/chencheng8888/GoDo/scheduler"
 	"github.com/google/wire"
 )

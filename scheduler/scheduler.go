@@ -4,6 +4,7 @@ import (
 	"github.com/chencheng8888/GoDo/config"
 	"github.com/chencheng8888/GoDo/dao"
 	"github.com/chencheng8888/GoDo/model"
+	"github.com/chencheng8888/GoDo/pkg/log"
 	"github.com/google/wire"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
@@ -21,20 +22,24 @@ type Scheduler struct {
 	taskInfoDao *dao.TaskInfoDao
 }
 
-func NewScheduler(conf *config.ScheduleConfig, logMiddleware *LogMiddleware, taskLogMiddleware *TaskLogMiddleware, taskInfoDao *dao.TaskInfoDao, log *zap.SugaredLogger) *Scheduler {
-	var c *cron.Cron
+func NewScheduler(conf *config.ScheduleConfig, logMiddleware *LogMiddleware, taskLogMiddleware *TaskLogMiddleware, taskInfoDao *dao.TaskInfoDao, logger *zap.SugaredLogger) *Scheduler {
+
+	var options []cron.Option
+
+	options = append(options, cron.WithLogger(log.NewCronLogger(logger)))
+
 	if conf.WithSeconds {
-		c = cron.New(cron.WithSeconds())
-	} else {
-		c = cron.New()
+		options = append(options, cron.WithSeconds())
 	}
+
+	c := cron.New(options...)
 
 	executor := Chain(BaseExecutor, logMiddleware.Handler, taskLogMiddleware.Handler)
 
 	s := &Scheduler{
 		c:           c,
 		executor:    executor,
-		log:         log,
+		log:         logger,
 		taskInfoDao: taskInfoDao,
 	}
 
