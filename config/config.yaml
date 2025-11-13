@@ -1,23 +1,49 @@
-server:
-  host: 0.0.0.0
-  port: 8080
+# GoDo 任务调度系统配置文件
 
+# 服务器配置
+server:
+  host: 0.0.0.0          # 服务监听地址，0.0.0.0 表示监听所有网络接口
+  port: 8080             # HTTP 服务端口
+
+# 数据库配置
 db:
+  # MySQL 数据库连接字符串
+  # 格式: "用户名:密码@tcp(主机:端口)/数据库名?参数"
   addr: "root:12345678@tcp(localhost:13306)/GoDo?charset=utf8mb4&parseTime=True&loc=Local"
 
+# JWT 认证配置
 jwt:
+  # JWT 签名密钥，生产环境中请更换为复杂的随机字符串
   secret: "your_jwt_secret_key_change_me_in_production"
 
+# 任务调度配置
 schedule:
-  with_seconds: true
-  work_dir: "./uploads"
+  with_seconds: true      # 是否启用秒级精度的 Cron 表达式（6位格式）
+  work_dir: "./uploads"   # 脚本文件上传和存储目录
 
+# 日志配置
 log:
-  level: "info"
-  format: "console"
-  path: "./logs"
-  file_name: "app.log"
-  max_size: 100
-  max_age: 7
-  compress: true
-  stdout: true
+  level: "info"          # 日志级别: debug, info, warn, error
+  format: "console"      # 日志格式: console, json
+  path: "./logs"         # 日志文件存储路径
+  file_name: "app.log"   # 日志文件名
+  max_size: 100          # 单个日志文件最大大小（MB）
+  max_age: 7             # 日志文件保留天数
+  compress: true         # 是否压缩旧的日志文件
+  stdout: true           # 是否同时输出到控制台
+
+# Cron 表达式说明（当 with_seconds 为 true 时）:
+# ┌─────────── 秒 (0-59)
+# │ ┌───────── 分 (0-59)
+# │ │ ┌─────── 时 (0-23)
+# │ │ │ ┌───── 日 (1-31)
+# │ │ │ │ ┌─── 月 (1-12)
+# │ │ │ │ │ ┌─ 星期 (0-6, 0=Sunday)
+# │ │ │ │ │ │
+# * * * * * *
+#
+# 示例:
+# "0 */5 * * * *"    - 每5分钟执行
+# "0 0 2 * * *"      - 每天凌晨2点执行
+# "0 0 9 * * 1-5"    - 工作日上午9点执行
+# "30 0 12 * * 6,0"  - 每周六日中午12:00:30执行
