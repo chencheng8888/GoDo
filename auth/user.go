@@ -7,6 +7,7 @@ import (
     "strings"
     "time"
 
+    "github.com/chencheng8888/GoDo/config"
     "github.com/chencheng8888/GoDo/dao"
     "github.com/chencheng8888/GoDo/pkg/response"
     "github.com/gin-gonic/gin"
@@ -20,15 +21,15 @@ var (
 )
 
 type Auth struct {
-    userDao *dao.UserDao
+    userDao   *dao.UserDao
+    jwtSecret []byte
 }
 
-var jwtSecret = []byte("your_secret_key") // 替换为更安全的密钥
-
 // NewAuth 创建Auth实例
-func NewAuth(userDao *dao.UserDao) *Auth {
+func NewAuth(userDao *dao.UserDao, jwtConfig *config.JWTConfig) *Auth {
     return &Auth{
-        userDao: userDao,
+        userDao:   userDao,
+        jwtSecret: []byte(jwtConfig.Secret),
     }
 }
 
@@ -70,7 +71,7 @@ func (a *Auth) generateJWT(userName string) (string, error) {
     }
 
     token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    return token.SignedString(jwtSecret)
+    return token.SignedString(a.jwtSecret)
 }
 
 // ValidateToken 验证JWT token并返回用户名
@@ -79,7 +80,7 @@ func (a *Auth) ValidateToken(tokenString string) (string, error) {
         if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
             return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
         }
-        return jwtSecret, nil
+        return a.jwtSecret, nil
     })
 
     if err != nil {

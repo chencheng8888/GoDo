@@ -45,7 +45,8 @@ func WireNewApp(configConfig *config.Config) (*App, error) {
 		return nil, err
 	}
 	userDao := dao.NewUserDao(db)
-	authAuth := auth.NewAuth(userDao)
+	jwtConfig := config.GetJWTConfig(configConfig)
+	authAuth := auth.NewAuth(userDao, jwtConfig)
 	userController := controller.NewUserController(authAuth)
 	engine := api.NewGinEngine(taskController, userController, authAuth, sugaredLogger)
 	apiAPI := api.NewAPI(serverConfig, engine, sugaredLogger)
