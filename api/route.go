@@ -59,6 +59,7 @@ func InitUserRoute(userController *controller.UserController) RouteIniter {
 		g := r.Group("/api/v1/auth")
 		{
 			g.POST("/login", userController.Login)
+			g.POST("/register", userController.Register)
 		}
 	})
 }

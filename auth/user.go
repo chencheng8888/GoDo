@@ -9,6 +9,7 @@ import (
 
     "github.com/chencheng8888/GoDo/config"
     "github.com/chencheng8888/GoDo/dao"
+    "github.com/chencheng8888/GoDo/model"
     "github.com/chencheng8888/GoDo/pkg/response"
     "github.com/gin-gonic/gin"
     "github.com/golang-jwt/jwt/v4"
@@ -37,6 +38,10 @@ var (
     ErrUserNotFound      = errors.New("user not found")
     ErrPasswordIncorrect = errors.New("password incorrect")
     ErrTokenGeneration   = errors.New("failed to generate token")
+    ErrUserExists        = errors.New("user already exists")
+    ErrEmailExists       = errors.New("email already exists")
+    ErrUserNameExists    = errors.New("username already exists")
+    ErrPasswordHash      = errors.New("failed to hash password")
 )
 
 // Login 验证用户名和密码，并生成 JWT
@@ -127,4 +132,46 @@ func (a *Auth) JWTAuthMiddleware() gin.HandlerFunc {
         c.Set("userName", userName)
         c.Next()
     }
+}
+
+// Register 用户注册
+func (a *Auth) Register(email, userName, password string) error {
+    // 检查邮箱是否已存在
+    emailExists, err := a.userDao.CheckUserExistsByEmail(email)
+    if err != nil {
+        return fmt.Errorf("database error: %v", err)
+    }
+    if emailExists {
+        return ErrEmailExists
+    }
+
+    // 检查用户名是否已存在
+    userNameExists, err := a.userDao.CheckUserExistsByUserName(userName)
+    if err != nil {
+        return fmt.Errorf("database error: %v", err)
+    }
+    if userNameExists {
+        return ErrUserNameExists
+    }
+
+    // 对密码进行哈希加密
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+    if err != nil {
+        return ErrPasswordHash
+    }
+
+    // 创建用户对象
+    user := &model.User{
+        Email:    email,
+        UserName: userName,
+        Password: string(hashedPassword),
+    }
+
+    // 保存到数据库
+    err = a.userDao.CreateUser(user)
+    if err != nil {
+        return fmt.Errorf("failed to create user: %v", err)
+    }
+
+    return nil
 }

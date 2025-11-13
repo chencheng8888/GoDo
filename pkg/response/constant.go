@@ -27,4 +27,13 @@ const (
 
 	UnauthorizedCode = 4008
 	UnauthorizedMsg  = "unauthorized"
+
+	EmailExistsCode = 4009
+	EmailExistsMsg  = "email already exists"
+
+	UserNameExistsCode = 4010
+	UserNameExistsMsg  = "username already exists"
+
+	InternalErrorCode = 5000
+	InternalErrorMsg  = "internal server error"
 )
