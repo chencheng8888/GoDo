@@ -15,4 +15,7 @@ const (
 
 	DeleteTaskFailedCode = 4004
 	DeleteTaskFailedMsg  = "delete task failed"
+
+	LoginFailedCode = 4005
+	LoginFailedMsg  = "login failed"
 )

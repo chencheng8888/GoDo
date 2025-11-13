@@ -8,6 +8,7 @@ package main
 
 import (
 	"github.com/chencheng8888/GoDo/api"
+	"github.com/chencheng8888/GoDo/auth"
 	"github.com/chencheng8888/GoDo/config"
 	"github.com/chencheng8888/GoDo/controller"
 	"github.com/chencheng8888/GoDo/dao"
@@ -39,7 +40,10 @@ func WireNewApp(configConfig *config.Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	engine := api.NewGinEngine(taskController, sugaredLogger)
+	userDao := dao.NewUserDao(db)
+	authAuth := auth.NewAuth(userDao)
+	userController := controller.NewUserController(authAuth)
+	engine := api.NewGinEngine(taskController, userController, sugaredLogger)
 	apiAPI := api.NewAPI(serverConfig, engine, sugaredLogger)
 	app := NewApp(apiAPI, schedulerScheduler)
 	return app, nil

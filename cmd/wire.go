@@ -5,6 +5,7 @@ package main
 
 import (
 	"github.com/chencheng8888/GoDo/api"
+	"github.com/chencheng8888/GoDo/auth"
 	"github.com/chencheng8888/GoDo/config"
 	"github.com/chencheng8888/GoDo/controller"
 	"github.com/chencheng8888/GoDo/dao"
@@ -17,6 +18,7 @@ func WireNewApp(*config.Config) (*App, error) {
 	panic(wire.Build(
 		NewApp,
 		api.ProviderSet,
+		auth.ProviderSet,
 		config.ProviderSet,
 		controller.ProviderSet,
 		dao.ProviderSet,

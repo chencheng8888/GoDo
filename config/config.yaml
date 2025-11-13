@@ -3,7 +3,7 @@ server:
   port: 8080
 
 db:
-  addr: "root:12345678@tcp(localhost:3306)/GoDo?charset=utf8mb4&parseTime=True&loc=Local"
+  addr: "root:12345678@tcp(localhost:13306)/GoDo?charset=utf8mb4&parseTime=True&loc=Local"
 
 schedule:
   with_seconds: true
