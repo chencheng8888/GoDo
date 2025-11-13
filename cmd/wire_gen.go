@@ -16,6 +16,10 @@ import (
 	"github.com/chencheng8888/GoDo/scheduler"
 )
 
+import (
+	_ "github.com/chencheng8888/GoDo/docs"
+)
+
 // Injectors from wire.go:
 
 func WireNewApp(configConfig *config.Config) (*App, error) {
@@ -43,7 +47,7 @@ func WireNewApp(configConfig *config.Config) (*App, error) {
 	userDao := dao.NewUserDao(db)
 	authAuth := auth.NewAuth(userDao)
 	userController := controller.NewUserController(authAuth)
-	engine := api.NewGinEngine(taskController, userController, sugaredLogger)
+	engine := api.NewGinEngine(taskController, userController, authAuth, sugaredLogger)
 	apiAPI := api.NewAPI(serverConfig, engine, sugaredLogger)
 	app := NewApp(apiAPI, schedulerScheduler)
 	return app, nil

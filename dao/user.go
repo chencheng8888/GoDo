@@ -1,6 +1,10 @@
 package dao
 
-import "gorm.io/gorm"
+import (
+	"errors"
+
+	"gorm.io/gorm"
+)
 
 type UserDao struct {
 	db *gorm.DB
@@ -13,8 +17,25 @@ func NewUserDao(db *gorm.DB) *UserDao {
 	}
 }
 
+var (
+	ErrUserNotFound = errors.New("user not found")
+)
+
 func (u *UserDao) GetPasswordByUserName(userName string) (string, error) {
 	var password string
-	err := u.db.Table("users").Where("user_name = ?", userName).Select("password").Scan(&password).Error
-	return password, err
+	err := u.db.Table("users").Where("username = ?", userName).Select("password").Scan(&password).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", ErrUserNotFound
+		}
+		return "", err
+	}
+
+	// 如果密码为空字符串，也表示用户不存在
+	if password == "" {
+		return "", ErrUserNotFound
+	}
+
+	return password, nil
 }

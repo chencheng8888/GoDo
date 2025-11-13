@@ -19,13 +19,9 @@ definitions:
         description: 任务描述
         example: 每日数据备份任务
         type: string
-      owner_name:
-        description: 任务所有者
-        example: admin
-        type: string
       scheduled_time:
-        description: Cron表达式
-        example: 0 2 * * *
+        description: Cron表达式(支持秒级)
+        example: 0 2 * * * *
         type: string
       task_name:
         description: 任务名称
@@ -43,7 +39,6 @@ definitions:
     required:
     - command
     - description
-    - owner_name
     - scheduled_time
     - task_name
     - timeout
@@ -64,10 +59,6 @@ definitions:
         description: 任务ID
         example: 12345
         type: integer
-      user_name:
-        description: 用户名
-        example: admin
-        type: string
     type: object
   controller.ListTaskResponseData:
     description: 任务列表响应数据结构
@@ -162,7 +153,15 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
         "401":
-          description: 登录失败
+          description: 密码错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: 用户不存在
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 服务器内部错误
           schema:
             $ref: '#/definitions/response.Response'
       summary: 用户登录
@@ -172,7 +171,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: 创建一个新的Shell任务，支持定时执行
+      description: 创建一个新的Shell任务，支持定时执行，任务所有者从JWT token中获取
       parameters:
       - description: 任务创建参数
         in: body
@@ -196,6 +195,12 @@ paths:
           description: 请求参数错误
           schema:
             $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
       summary: 添加Shell任务
       tags:
       - 任务管理
@@ -203,7 +208,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: 根据任务ID和用户名删除指定任务
+      description: 根据任务ID和JWT token中的用户名删除指定任务
       parameters:
       - description: 删除任务参数
         in: body
@@ -222,25 +227,24 @@ paths:
           description: 请求参数错误
           schema:
             $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
         "500":
           description: 删除任务失败
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
       summary: 删除任务
       tags:
       - 任务管理
-  /api/v1/tasks/list/{name}:
+  /api/v1/tasks/list:
     get:
       consumes:
       - application/json
-      description: 根据用户名获取该用户的所有任务
-      parameters:
-      - description: 用户名
-        example: '"admin"'
-        in: path
-        name: name
-        required: true
-        type: string
+      description: 根据JWT token中的用户名获取该用户的所有任务
       produces:
       - application/json
       responses:
@@ -253,10 +257,12 @@ paths:
                 data:
                   $ref: '#/definitions/controller.ListTaskResponseData'
               type: object
-        "400":
-          description: 请求参数错误
+        "401":
+          description: 未授权
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
       summary: 获取用户任务列表
       tags:
       - 任务管理
@@ -287,10 +293,16 @@ paths:
           description: 文件未上传
           schema:
             $ref: '#/definitions/response.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/response.Response'
         "500":
           description: 文件保存失败
           schema:
             $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
       summary: 上传脚本文件
       tags:
       - 任务管理

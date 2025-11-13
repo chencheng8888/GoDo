@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -22,8 +23,8 @@ func NewUserController(a *auth.Auth) *UserController {
 // LoginRequest 登录请求结构体
 // @Description 用户登录请求参数
 type LoginRequest struct {
-	UserName string `json:"username" binding:"required" example:"admin"`        // 用户名
-	Password string `json:"password" binding:"required" example:"password123"`  // 密码
+	UserName string `json:"username" binding:"required" example:"admin"`       // 用户名
+	Password string `json:"password" binding:"required" example:"password123"` // 密码
 }
 
 // LoginResponseData 登录响应数据
@@ -41,7 +42,9 @@ type LoginResponseData struct {
 // @Param request body LoginRequest true "登录请求参数"
 // @Success 200 {object} response.Response{data=LoginResponseData} "登录成功"
 // @Failure 400 {object} response.Response "请求参数错误"
-// @Failure 401 {object} response.Response "登录失败"
+// @Failure 401 {object} response.Response "密码错误"
+// @Failure 404 {object} response.Response "用户不存在"
+// @Failure 500 {object} response.Response "服务器内部错误"
 // @Router /api/v1/auth/login [post]
 func (uc *UserController) Login(c *gin.Context) {
 	var req LoginRequest
@@ -53,7 +56,17 @@ func (uc *UserController) Login(c *gin.Context) {
 	// 调用auth包的Login方法进行身份验证
 	token, err := uc.auth.Login(req.UserName, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, response.Error(response.LoginFailedCode, fmt.Sprintf("%s:%s", response.LoginFailedMsg, err.Error())))
+		// 根据不同的错误类型返回不同的响应
+		if errors.Is(err, auth.ErrUserNotFound) {
+			c.JSON(http.StatusNotFound, response.Error(response.UserNotFoundCode, response.UserNotFoundMsg))
+			return
+		}
+		if errors.Is(err, auth.ErrPasswordIncorrect) {
+			c.JSON(http.StatusUnauthorized, response.Error(response.PasswordIncorrectCode, response.PasswordIncorrectMsg))
+			return
+		}
+		// 其他错误（如token生成失败、数据库错误等）
+		c.JSON(http.StatusInternalServerError, response.Error(response.LoginFailedCode, fmt.Sprintf("%s:%s", response.LoginFailedMsg, err.Error())))
 		return
 	}
 

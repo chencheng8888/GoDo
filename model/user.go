@@ -1,15 +1,16 @@
 package model
 
 import (
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type User struct {
 	ID        uint      `gorm:"primarykey;column:id"`
-	Email     string    `gorm:"column:email;uniqueIndex"`
-	UserName  string    `gorm:"column:username;uniqueIndex"`
-	Password  string    `gorm:"column:password"`
+	Email     string    `gorm:"column:email;type:varchar(255);uniqueIndex"`
+	UserName  string    `gorm:"column:username;type:varchar(100);uniqueIndex"`
+	Password  string    `gorm:"column:password;type:varchar(255)"`
 	CreatedAt time.Time `gorm:"column:created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at"`
 }

@@ -74,7 +74,19 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "登录失败",
+                        "description": "密码错误",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "用户不存在",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "服务器内部错误",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -84,7 +96,12 @@ const docTemplate = `{
         },
         "/api/v1/tasks/add_shell_task": {
             "post": {
-                "description": "创建一个新的Shell任务，支持定时执行",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "创建一个新的Shell任务，支持定时执行，任务所有者从JWT token中获取",
                 "consumes": [
                     "application/json"
                 ],
@@ -130,13 +147,24 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
+                    },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
                     }
                 }
             }
         },
         "/api/v1/tasks/delete": {
             "delete": {
-                "description": "根据任务ID和用户名删除指定任务",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据任务ID和JWT token中的用户名删除指定任务",
                 "consumes": [
                     "application/json"
                 ],
@@ -171,6 +199,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Response"
                         }
                     },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
                     "500": {
                         "description": "删除任务失败",
                         "schema": {
@@ -180,9 +214,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/tasks/list/{name}": {
+        "/api/v1/tasks/list": {
             "get": {
-                "description": "根据用户名获取该用户的所有任务",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据JWT token中的用户名获取该用户的所有任务",
                 "consumes": [
                     "application/json"
                 ],
@@ -193,16 +232,6 @@ const docTemplate = `{
                     "任务管理"
                 ],
                 "summary": "获取用户任务列表",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "example": "\"admin\"",
-                        "description": "用户名",
-                        "name": "name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "获取成功",
@@ -222,8 +251,8 @@ const docTemplate = `{
                             ]
                         }
                     },
-                    "400": {
-                        "description": "请求参数错误",
+                    "401": {
+                        "description": "未授权",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -233,6 +262,11 @@ const docTemplate = `{
         },
         "/api/v1/tasks/upload_script": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "上传脚本文件到服务器，用于后续任务执行",
                 "consumes": [
                     "multipart/form-data"
@@ -278,6 +312,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Response"
                         }
                     },
+                    "401": {
+                        "description": "未授权",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
                     "500": {
                         "description": "文件保存失败",
                         "schema": {
@@ -295,7 +335,6 @@ const docTemplate = `{
             "required": [
                 "command",
                 "description",
-                "owner_name",
                 "scheduled_time",
                 "task_name",
                 "timeout",
@@ -323,15 +362,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "每日数据备份任务"
                 },
-                "owner_name": {
-                    "description": "任务所有者",
-                    "type": "string",
-                    "example": "admin"
-                },
                 "scheduled_time": {
-                    "description": "Cron表达式",
+                    "description": "Cron表达式(支持秒级)",
                     "type": "string",
-                    "example": "0 2 * * *"
+                    "example": "0 2 * * * *"
                 },
                 "task_name": {
                     "description": "任务名称",
@@ -370,11 +404,6 @@ const docTemplate = `{
                     "description": "任务ID",
                     "type": "integer",
                     "example": 12345
-                },
-                "user_name": {
-                    "description": "用户名",
-                    "type": "string",
-                    "example": "admin"
                 }
             }
         },
