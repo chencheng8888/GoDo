@@ -1,15 +1,37 @@
+// Package main GoDo任务调度系统
+// @title GoDo任务调度系统API
+// @version 1.0
+// @description 这是一个基于Go语言开发的任务调度系统API文档
+// @termsOfService http://swagger.io/terms/
+//
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+//
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+//
+// @host localhost:8080
+// @BasePath /
+//
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 package main
 
 import (
 	"context"
 	"flag"
-	"github.com/chencheng8888/GoDo/api"
-	"github.com/chencheng8888/GoDo/config"
-	"github.com/chencheng8888/GoDo/scheduler"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/chencheng8888/GoDo/api"
+	"github.com/chencheng8888/GoDo/config"
+	"github.com/chencheng8888/GoDo/scheduler"
+	_ "github.com/chencheng8888/GoDo/docs" // 导入swagger文档
 )
 
 var (

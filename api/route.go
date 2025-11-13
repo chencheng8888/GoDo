@@ -6,6 +6,8 @@ import (
 	"github.com/chencheng8888/GoDo/controller"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
 )
 
@@ -23,6 +25,10 @@ func NewGinEngine(taskController *controller.TaskController, userController *con
 	r := gin.New()
 	r.Use(ginzap.Ginzap(logger.Desugar(), time.RFC3339, true))
 	r.Use(ginzap.RecoveryWithZap(logger.Desugar(), true))
+	
+	// Swagger文档路由
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
+	
 	InitRoutes(r, InitTaskRoute(taskController), InitUserRoute(userController))
 	return r
 }

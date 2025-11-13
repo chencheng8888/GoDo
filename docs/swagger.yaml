@@ -1,0 +1,303 @@
+basePath: /
+definitions:
+  controller.AddShellTaskRequest:
+    description: 添加Shell任务的请求参数
+    properties:
+      args:
+        description: 命令参数
+        example:
+        - backup.sh
+        - --full
+        items:
+          type: string
+        type: array
+      command:
+        description: 执行命令
+        example: /bin/bash
+        type: string
+      description:
+        description: 任务描述
+        example: 每日数据备份任务
+        type: string
+      owner_name:
+        description: 任务所有者
+        example: admin
+        type: string
+      scheduled_time:
+        description: Cron表达式
+        example: 0 2 * * *
+        type: string
+      task_name:
+        description: 任务名称
+        example: daily-backup
+        type: string
+      timeout:
+        description: 超时时间(秒)，最大2小时
+        example: 1800
+        maximum: 7200
+        type: integer
+      use_shell:
+        description: 是否使用Shell
+        example: true
+        type: boolean
+    required:
+    - command
+    - description
+    - owner_name
+    - scheduled_time
+    - task_name
+    - timeout
+    - use_shell
+    type: object
+  controller.AddShellTaskResponseData:
+    description: 添加任务成功响应数据
+    properties:
+      task_id:
+        description: 新创建的任务ID
+        example: 12345
+        type: integer
+    type: object
+  controller.DeleteTaskRequest:
+    description: 删除任务的请求参数
+    properties:
+      task_id:
+        description: 任务ID
+        example: 12345
+        type: integer
+      user_name:
+        description: 用户名
+        example: admin
+        type: string
+    type: object
+  controller.ListTaskResponseData:
+    description: 任务列表响应数据结构
+    properties:
+      tasks:
+        description: 任务列表
+        items:
+          $ref: '#/definitions/scheduler.Task'
+        type: array
+    type: object
+  controller.LoginRequest:
+    description: 用户登录请求参数
+    properties:
+      password:
+        description: 密码
+        example: password123
+        type: string
+      username:
+        description: 用户名
+        example: admin
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  controller.LoginResponseData:
+    description: 登录成功响应数据
+    properties:
+      token:
+        description: JWT令牌
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  controller.UploadScriptResponseData:
+    description: 脚本上传成功响应数据
+    properties:
+      file_name:
+        description: 上传后的文件名
+        example: 1699123456789-script.sh
+        type: string
+    type: object
+  response.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      msg:
+        type: string
+    type: object
+  scheduler.Task:
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: 这是一个基于Go语言开发的任务调度系统API文档
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: GoDo任务调度系统API
+  version: "1.0"
+paths:
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 用户登录接口，验证用户名和密码，返回JWT令牌
+      parameters:
+      - description: 登录请求参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/controller.LoginResponseData'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: 登录失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 用户登录
+      tags:
+      - 用户认证
+  /api/v1/tasks/add_shell_task:
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的Shell任务，支持定时执行
+      parameters:
+      - description: 任务创建参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.AddShellTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/controller.AddShellTaskResponseData'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 添加Shell任务
+      tags:
+      - 任务管理
+  /api/v1/tasks/delete:
+    delete:
+      consumes:
+      - application/json
+      description: 根据任务ID和用户名删除指定任务
+      parameters:
+      - description: 删除任务参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.DeleteTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 删除任务失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 删除任务
+      tags:
+      - 任务管理
+  /api/v1/tasks/list/{name}:
+    get:
+      consumes:
+      - application/json
+      description: 根据用户名获取该用户的所有任务
+      parameters:
+      - description: 用户名
+        example: '"admin"'
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/controller.ListTaskResponseData'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 获取用户任务列表
+      tags:
+      - 任务管理
+  /api/v1/tasks/upload_script:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 上传脚本文件到服务器，用于后续任务执行
+      parameters:
+      - description: 脚本文件
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 上传成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/controller.UploadScriptResponseData'
+              type: object
+        "400":
+          description: 文件未上传
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: 文件保存失败
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: 上传脚本文件
+      tags:
+      - 任务管理
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
