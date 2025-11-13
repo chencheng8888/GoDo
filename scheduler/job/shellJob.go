@@ -19,7 +19,15 @@ type ShellJob struct {
 	output    chan string   // 标准输出
 	errOutput chan string   // 错误输出
 
-	WorkDir string `json:"work_dir"` // 工作目录
+	workDir string // 工作目录
+}
+
+func (s *ShellJob) String() string {
+	if s == nil {
+		return ""
+	}
+	res, _ := json.Marshal(s)
+	return string(res)
 }
 
 func NewShellJob(useShell bool, timeOut time.Duration, workDir, command string, args ...string) *ShellJob {
@@ -30,7 +38,7 @@ func NewShellJob(useShell bool, timeOut time.Duration, workDir, command string, 
 		Timeout:   timeOut,
 		output:    make(chan string, 100),
 		errOutput: make(chan string, 100),
-		WorkDir:   workDir,
+		workDir:   workDir,
 	}
 }
 
@@ -74,8 +82,8 @@ func (s *ShellJob) Run() {
 		cmd = exec.CommandContext(ctx, s.Command, s.Args...)
 	}
 
-	if len(s.WorkDir) > 0 {
-		cmd.Dir = s.WorkDir
+	if len(s.workDir) > 0 {
+		cmd.Dir = s.workDir
 	}
 
 	var stdoutBuf, stderrBuf bytes.Buffer
@@ -108,7 +116,14 @@ func (s *ShellJob) ErrOutput() <-chan string {
 }
 
 func (s *ShellJob) ToJson() string {
-	res, _ := json.Marshal(s)
+	type Alias ShellJob // 防止递归调用
+	res, _ := json.Marshal(&struct {
+		WorkDir string `json:"work_dir"`
+		*Alias
+	}{
+		WorkDir: s.workDir,
+		Alias:   (*Alias)(s),
+	})
 	return string(res)
 }
 
@@ -117,10 +132,17 @@ func (s *ShellJob) UnmarshalFromJson(jsonStr string) error {
 		return fmt.Errorf("cannot unmarshall from json: nil pointer")
 	}
 
-	err := json.Unmarshal([]byte(jsonStr), s)
-	if err != nil {
+	type Alias ShellJob
+	aux := &struct {
+		WorkDir string `json:"work_dir"`
+		*Alias
+	}{
+		Alias: (*Alias)(s),
+	}
+	if err := json.Unmarshal([]byte(jsonStr), &aux); err != nil {
 		return err
 	}
+	s.workDir = aux.WorkDir
 	s.output = make(chan string, 100)
 	s.errOutput = make(chan string, 100)
 	return nil

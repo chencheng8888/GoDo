@@ -35,13 +35,13 @@ func NewTaskController(s *scheduler.Scheduler, cf *config.ScheduleConfig) (*Task
 // TaskResponse 用于API响应的任务结构体
 // @Description 任务信息响应结构
 type TaskResponse struct {
-	ID            int    `json:"id" example:"12345"`                    // 任务ID
-	TaskName      string `json:"task_name" example:"daily-backup"`      // 任务名称
-	ScheduledTime string `json:"scheduled_time" example:"0 2 * * * *"`  // Cron表达式
-	OwnerName     string `json:"owner_name" example:"admin"`            // 任务拥有者
-	Description   string `json:"description" example:"每日数据备份任务"`      // 任务描述
-	JobType       string `json:"job_type" example:"shell"`              // 任务类型
-	Job           string `json:"job" example:"{\"command\":\"/bin/bash\",\"args\":[\"backup.sh\"]}"`  // 任务详情(JSON格式)
+	ID            int    `json:"id" example:"12345"`                                                 // 任务ID
+	TaskName      string `json:"task_name" example:"daily-backup"`                                   // 任务名称
+	ScheduledTime string `json:"scheduled_time" example:"0 2 * * * *"`                               // Cron表达式
+	OwnerName     string `json:"owner_name" example:"admin"`                                         // 任务拥有者
+	Description   string `json:"description" example:"每日数据备份任务"`                                     // 任务描述
+	JobType       string `json:"job_type" example:"shell"`                                           // 任务类型
+	Job           string `json:"job" example:"{\"command\":\"/bin/bash\",\"args\":[\"backup.sh\"]}"` // 任务详情(JSON格式)
 }
 
 // TaskToResponse 将scheduler.Task转换为TaskResponse
@@ -53,7 +53,7 @@ func TaskToResponse(task scheduler.Task) TaskResponse {
 		OwnerName:     task.GetOwnerName(),
 		Description:   task.GetDescription(),
 		JobType:       task.GetJobType(),
-		Job:           task.GetJobJson(),
+		Job:           task.GetJob(),
 	}
 }
 
@@ -83,13 +83,13 @@ func (tc *TaskController) ListTasks(c *gin.Context) {
 
 	name := userName.(string)
 	tasks := tc.scheduler.ListTasks(name)
-	
+
 	// 转换为响应结构体
 	var taskResponses []TaskResponse
 	for _, task := range tasks {
 		taskResponses = append(taskResponses, TaskToResponse(task))
 	}
-	
+
 	c.JSON(http.StatusOK, response.Success(ListTaskResponseData{Tasks: taskResponses}))
 }
 
@@ -141,13 +141,13 @@ func (tc *TaskController) UploadScript(c *gin.Context) {
 // AddShellTaskRequest 添加Shell任务请求
 // @Description 添加Shell任务的请求参数
 type AddShellTaskRequest struct {
-	TaskName      string   `json:"task_name" binding:"required" example:"daily-backup"`        // 任务名称
-	Description   string   `json:"description" binding:"required" example:"每日数据备份任务"`          // 任务描述
+	TaskName      string   `json:"task_name" binding:"required" example:"daily-backup"`          // 任务名称
+	Description   string   `json:"description" binding:"required" example:"每日数据备份任务"`            // 任务描述
 	ScheduledTime string   `json:"scheduled_time" binding:"required,cron" example:"0 2 * * * *"` // Cron表达式(支持秒级)
-	Command       string   `json:"command" binding:"required" example:"/bin/bash"`             // 执行命令
-	Args          []string `json:"args" binding:"omitempty" example:"backup.sh,--full"`        // 命令参数
-	UseShell      bool     `json:"use_shell" binding:"required" example:"true"`                // 是否使用Shell
-	Timeout       int      `json:"timeout" binding:"required,max=7200,gt=0" example:"1800"`    // 超时时间(秒)，最大2小时
+	Command       string   `json:"command" binding:"required" example:"/bin/bash"`               // 执行命令
+	Args          []string `json:"args" binding:"omitempty" example:"backup.sh,--full"`          // 命令参数
+	UseShell      bool     `json:"use_shell" binding:"required" example:"true"`                  // 是否使用Shell
+	Timeout       int      `json:"timeout" binding:"required,max=7200,gt=0" example:"1800"`      // 超时时间(秒)，最大2小时
 }
 
 // AddShellTaskResponseData 添加Shell任务响应数据

@@ -18,8 +18,8 @@ type Task struct {
 }
 
 func (t *Task) String() string {
-	return fmt.Sprintf("Task{id: %d, taskName: %s, scheduledTime: %s, ownerName: %s, description: %s, job: %s}",
-		t.id, t.taskName, t.scheduledTime, t.ownerName, t.description, t.f.ToJson())
+	return fmt.Sprintf("Task{id: %d, taskName: %s, scheduledTime: %s, ownerName: %s, description: %s, job: %v}",
+		t.id, t.taskName, t.scheduledTime, t.ownerName, t.description, t.f)
 }
 
 func NewTask(taskName, ownerName, scheduledTime, description string, job job.Job) Task {
@@ -69,7 +69,6 @@ type TaskResult struct {
 	ErrOutput string
 }
 
-// 添加获取私有字段的方法
 func (t *Task) GetID() int {
 	return t.id
 }
@@ -90,14 +89,13 @@ func (t *Task) GetDescription() string {
 	return t.description
 }
 
-func (t *Task) GetJob() job.Job {
-	return t.f
+func (t *Task) GetJob() string {
+	if t.f == nil {
+		return ""
+	}
+	return fmt.Sprintf("%v", t.f)
 }
 
 func (t *Task) GetJobType() string {
 	return t.f.Type()
-}
-
-func (t *Task) GetJobJson() string {
-	return t.f.ToJson()
 }
