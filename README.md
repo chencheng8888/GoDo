@@ -4,7 +4,7 @@
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)
 
-GoDo 是一个基于 Go 语言开发的轻量级任务调度系统，支持 Cron 表达式定时执行，提供完整的 RESTful API 和 Web 管理界面。
+GoDo 是一个基于 Go 语言开发的轻量级任务调度系统，支持 Cron 表达式定时执行，提供完整的 RESTful API
 
 ## ✨ 特性
 
