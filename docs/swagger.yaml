@@ -66,7 +66,7 @@ definitions:
       tasks:
         description: 任务列表
         items:
-          $ref: '#/definitions/scheduler.Task'
+          $ref: '#/definitions/controller.TaskResponse'
         type: array
     type: object
   controller.LoginRequest:
@@ -92,6 +92,38 @@ definitions:
         example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         type: string
     type: object
+  controller.TaskResponse:
+    description: 任务信息响应结构
+    properties:
+      description:
+        description: 任务描述
+        example: 每日数据备份任务
+        type: string
+      id:
+        description: 任务ID
+        example: 12345
+        type: integer
+      job:
+        description: 任务详情(JSON格式)
+        example: '{"command":"/bin/bash","args":["backup.sh"]}'
+        type: string
+      job_type:
+        description: 任务类型
+        example: shell
+        type: string
+      owner_name:
+        description: 任务拥有者
+        example: admin
+        type: string
+      scheduled_time:
+        description: Cron表达式
+        example: 0 2 * * * *
+        type: string
+      task_name:
+        description: 任务名称
+        example: daily-backup
+        type: string
+    type: object
   controller.UploadScriptResponseData:
     description: 脚本上传成功响应数据
     properties:
@@ -107,8 +139,6 @@ definitions:
       data: {}
       msg:
         type: string
-    type: object
-  scheduler.Task:
     type: object
 host: localhost:8080
 info:

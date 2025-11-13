@@ -2,9 +2,10 @@ package scheduler
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/chencheng8888/GoDo/model"
 	"github.com/chencheng8888/GoDo/scheduler/job"
-	"time"
 )
 
 type Task struct {
@@ -66,4 +67,37 @@ type TaskResult struct {
 	EndTime   time.Time
 	Output    string
 	ErrOutput string
+}
+
+// 添加获取私有字段的方法
+func (t *Task) GetID() int {
+	return t.id
+}
+
+func (t *Task) GetTaskName() string {
+	return t.taskName
+}
+
+func (t *Task) GetScheduledTime() string {
+	return t.scheduledTime
+}
+
+func (t *Task) GetOwnerName() string {
+	return t.ownerName
+}
+
+func (t *Task) GetDescription() string {
+	return t.description
+}
+
+func (t *Task) GetJob() job.Job {
+	return t.f
+}
+
+func (t *Task) GetJobType() string {
+	return t.f.Type()
+}
+
+func (t *Task) GetJobJson() string {
+	return t.f.ToJson()
 }

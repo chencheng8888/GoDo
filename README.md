@@ -86,10 +86,10 @@ go mod download
 3. **运行程序**
 ```bash
 # 使用默认配置运行
-go run cmd/main.go
+go run ./cmd/
 
 # 或指定配置文件
-go run cmd/main.go -conf config/config.yaml.local
+go run ./cmd/ -conf config/config.yaml.local
 ```
 
 
@@ -107,10 +107,10 @@ go run cmd/main.go -conf config/config.yaml.local
 go generate ./...
 
 # 构建二进制文件
-go build -o bin/godo cmd/main.go
+go build -o bin/godo ./cmd/
 
 # 交叉编译
-GOOS=linux GOARCH=amd64 go build -o bin/godo-linux cmd/main.go
+GOOS=linux GOARCH=amd64 go build -o bin/godo-linux ./cmd/
 ```
 
 ### 运行测试

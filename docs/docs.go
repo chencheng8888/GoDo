@@ -415,7 +415,7 @@ const docTemplate = `{
                     "description": "任务列表",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/scheduler.Task"
+                        "$ref": "#/definitions/controller.TaskResponse"
                     }
                 }
             }
@@ -451,6 +451,47 @@ const docTemplate = `{
                 }
             }
         },
+        "controller.TaskResponse": {
+            "description": "任务信息响应结构",
+            "type": "object",
+            "properties": {
+                "description": {
+                    "description": "任务描述",
+                    "type": "string",
+                    "example": "每日数据备份任务"
+                },
+                "id": {
+                    "description": "任务ID",
+                    "type": "integer",
+                    "example": 12345
+                },
+                "job": {
+                    "description": "任务详情(JSON格式)",
+                    "type": "string",
+                    "example": "{\"command\":\"/bin/bash\",\"args\":[\"backup.sh\"]}"
+                },
+                "job_type": {
+                    "description": "任务类型",
+                    "type": "string",
+                    "example": "shell"
+                },
+                "owner_name": {
+                    "description": "任务拥有者",
+                    "type": "string",
+                    "example": "admin"
+                },
+                "scheduled_time": {
+                    "description": "Cron表达式",
+                    "type": "string",
+                    "example": "0 2 * * * *"
+                },
+                "task_name": {
+                    "description": "任务名称",
+                    "type": "string",
+                    "example": "daily-backup"
+                }
+            }
+        },
         "controller.UploadScriptResponseData": {
             "description": "脚本上传成功响应数据",
             "type": "object",
@@ -473,9 +514,6 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
-        },
-        "scheduler.Task": {
-            "type": "object"
         }
     },
     "securityDefinitions": {

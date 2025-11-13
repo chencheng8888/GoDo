@@ -32,10 +32,35 @@ func NewTaskController(s *scheduler.Scheduler, cf *config.ScheduleConfig) (*Task
 	}, nil
 }
 
+// TaskResponse 用于API响应的任务结构体
+// @Description 任务信息响应结构
+type TaskResponse struct {
+	ID            int    `json:"id" example:"12345"`                    // 任务ID
+	TaskName      string `json:"task_name" example:"daily-backup"`      // 任务名称
+	ScheduledTime string `json:"scheduled_time" example:"0 2 * * * *"`  // Cron表达式
+	OwnerName     string `json:"owner_name" example:"admin"`            // 任务拥有者
+	Description   string `json:"description" example:"每日数据备份任务"`      // 任务描述
+	JobType       string `json:"job_type" example:"shell"`              // 任务类型
+	Job           string `json:"job" example:"{\"command\":\"/bin/bash\",\"args\":[\"backup.sh\"]}"`  // 任务详情(JSON格式)
+}
+
+// TaskToResponse 将scheduler.Task转换为TaskResponse
+func TaskToResponse(task scheduler.Task) TaskResponse {
+	return TaskResponse{
+		ID:            task.GetID(),
+		TaskName:      task.GetTaskName(),
+		ScheduledTime: task.GetScheduledTime(),
+		OwnerName:     task.GetOwnerName(),
+		Description:   task.GetDescription(),
+		JobType:       task.GetJobType(),
+		Job:           task.GetJobJson(),
+	}
+}
+
 // ListTaskResponseData 任务列表响应数据
 // @Description 任务列表响应数据结构
 type ListTaskResponseData struct {
-	Tasks []scheduler.Task `json:"tasks"` // 任务列表
+	Tasks []TaskResponse `json:"tasks"` // 任务列表
 }
 
 // ListTasks 获取任务列表
@@ -58,7 +83,14 @@ func (tc *TaskController) ListTasks(c *gin.Context) {
 
 	name := userName.(string)
 	tasks := tc.scheduler.ListTasks(name)
-	c.JSON(http.StatusOK, response.Success(ListTaskResponseData{Tasks: tasks}))
+	
+	// 转换为响应结构体
+	var taskResponses []TaskResponse
+	for _, task := range tasks {
+		taskResponses = append(taskResponses, TaskToResponse(task))
+	}
+	
+	c.JSON(http.StatusOK, response.Success(ListTaskResponseData{Tasks: taskResponses}))
 }
 
 // UploadScriptResponseData 上传脚本响应数据
