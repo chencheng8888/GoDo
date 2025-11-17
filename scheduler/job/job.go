@@ -1,11 +1,9 @@
 package job
 
-import (
-	"github.com/robfig/cron/v3"
-)
+import "context"
 
 type Job interface {
-	cron.Job
+	Run(ctx context.Context)
 	Type() string
 	Output() <-chan string
 	ErrOutput() <-chan string

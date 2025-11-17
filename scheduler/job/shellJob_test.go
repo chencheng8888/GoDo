@@ -1,6 +1,7 @@
 package job
 
 import (
+	"context"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -80,7 +81,7 @@ func TestShellJob_Run(t *testing.T) {
 				output:    tt.fields.output,
 				errOutput: tt.fields.errOutput,
 			}
-			s.Run()
+			s.Run(context.Background())
 
 			if tt.shouldError {
 				// 预期错误，应该从 ErrOutput 收到数据

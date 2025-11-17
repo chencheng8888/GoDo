@@ -1,14 +1,15 @@
 package scheduler
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 )
 
-type Executor func(t Task) TaskResult
+type Executor func(ctx context.Context, t Task) TaskResult
 
-func BaseExecutor(t Task) TaskResult {
+func BaseExecutor(ctx context.Context, t Task) TaskResult {
 	start := time.Now()
 
 	var (
@@ -21,7 +22,7 @@ func BaseExecutor(t Task) TaskResult {
 				panicMsg = fmt.Sprintf("%v", r)
 			}
 		}()
-		t.f.Run()
+		t.f.Run(ctx)
 	}()
 	return TaskResult{
 		StartTime: start,

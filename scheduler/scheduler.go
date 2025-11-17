@@ -1,11 +1,13 @@
 package scheduler
 
 import (
+	"context"
 	"github.com/chencheng8888/GoDo/config"
 	"github.com/chencheng8888/GoDo/dao"
 	"github.com/chencheng8888/GoDo/model"
 	"github.com/chencheng8888/GoDo/pkg/log"
 	"github.com/google/wire"
+	"github.com/panjf2000/ants/v2"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 )
@@ -20,9 +22,15 @@ type Scheduler struct {
 
 	log         *zap.SugaredLogger
 	taskInfoDao *dao.TaskInfoDao
+
+	pool *ants.Pool
+
+	schedulerCtx context.Context
+
+	cancelFunc context.CancelFunc
 }
 
-func NewScheduler(conf *config.ScheduleConfig, logMiddleware *LogMiddleware, taskLogMiddleware *TaskLogMiddleware, taskInfoDao *dao.TaskInfoDao, logger *zap.SugaredLogger) *Scheduler {
+func NewScheduler(conf *config.ScheduleConfig, logMiddleware *LogMiddleware, taskLogMiddleware *TaskLogMiddleware, taskInfoDao *dao.TaskInfoDao, logger *zap.SugaredLogger) (*Scheduler, error) {
 
 	var options []cron.Option
 
@@ -34,18 +42,28 @@ func NewScheduler(conf *config.ScheduleConfig, logMiddleware *LogMiddleware, tas
 
 	c := cron.New(options...)
 
+	pool, err := ants.NewPool(conf.GoroutinesSize, ants.WithLogger(log.NewAntsLogger(logger)))
+	if err != nil {
+		return nil, err
+	}
+
 	executor := Chain(BaseExecutor, logMiddleware.Handler, taskLogMiddleware.Handler)
 
+	schedulerCtx, cancel := context.WithCancel(context.Background())
+
 	s := &Scheduler{
-		c:           c,
-		executor:    executor,
-		log:         logger,
-		taskInfoDao: taskInfoDao,
+		c:            c,
+		executor:     executor,
+		log:          logger,
+		taskInfoDao:  taskInfoDao,
+		pool:         pool,
+		schedulerCtx: schedulerCtx,
+		cancelFunc:   cancel,
 	}
 
 	// Initialize tasks
 	s.initializeTasks()
-	return s
+	return s, nil
 }
 
 func (s *Scheduler) AddTask(t Task) (int, error) {
@@ -54,7 +72,12 @@ func (s *Scheduler) AddTask(t Task) (int, error) {
 
 func (s *Scheduler) addTask(t Task, addCronOnly bool) (int, error) {
 	id, err := s.c.AddFunc(t.scheduledTime, func() {
-		s.executor(t)
+		err := s.pool.Submit(func() {
+			s.executor(s.schedulerCtx, t)
+		})
+		if err != nil {
+			s.log.Errorf("submit task to pool failed: %s,task:%v", err, t)
+		}
 	})
 	if err != nil {
 		return -1, err
@@ -109,8 +132,13 @@ func (s *Scheduler) Start() {
 }
 
 func (s *Scheduler) Stop() {
+	// 取消上下文
+	s.cancelFunc()
+	// 停止 cron 调度器
 	ctx := s.c.Stop()
 	<-ctx.Done()
+	// 释放 goroutine 池资源
+	s.pool.Release()
 	s.log.Info("✔️Task scheduler stopped")
 }
 

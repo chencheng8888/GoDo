@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	"github.com/chencheng8888/GoDo/dao"
 	"github.com/chencheng8888/GoDo/model"
 	"go.uber.org/zap"
@@ -17,9 +18,9 @@ func NewLogMiddleware(log *zap.SugaredLogger) *LogMiddleware {
 }
 
 func (l *LogMiddleware) Handler(next Executor) Executor {
-	return func(t Task) TaskResult {
+	return func(ctx context.Context, t Task) TaskResult {
 		l.log.Infof("🚩 start task: %+v", t)
-		result := next(t)
+		result := next(ctx, t)
 		l.log.Infof("✔️ finish task: %+v,duration: %v, result: %+v", t, result.EndTime.Sub(result.StartTime), result)
 		return result
 	}
@@ -35,8 +36,8 @@ func NewTaskLogMiddleware(log *zap.SugaredLogger, taskLogDao *dao.TaskLogDao) *T
 }
 
 func (tl *TaskLogMiddleware) Handler(next Executor) Executor {
-	return func(t Task) TaskResult {
-		result := next(t)
+	return func(ctx context.Context, t Task) TaskResult {
+		result := next(ctx, t)
 		taskLog := model.TaskLog{
 			TaskId:    t.id,
 			Name:      t.taskName,

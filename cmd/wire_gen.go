@@ -39,7 +39,10 @@ func WireNewApp(configConfig *config.Config) (*App, error) {
 	taskLogDao := dao.NewTaskLogDao(db)
 	taskLogMiddleware := scheduler.NewTaskLogMiddleware(sugaredLogger, taskLogDao)
 	taskInfoDao := dao.NewTaskInfoDao(db)
-	schedulerScheduler := scheduler.NewScheduler(scheduleConfig, logMiddleware, taskLogMiddleware, taskInfoDao, sugaredLogger)
+	schedulerScheduler, err := scheduler.NewScheduler(scheduleConfig, logMiddleware, taskLogMiddleware, taskInfoDao, sugaredLogger)
+	if err != nil {
+		return nil, err
+	}
 	taskController, err := controller.NewTaskController(schedulerScheduler, scheduleConfig)
 	if err != nil {
 		return nil, err

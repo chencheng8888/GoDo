@@ -146,7 +146,7 @@ type AddShellTaskRequest struct {
 	ScheduledTime string   `json:"scheduled_time" binding:"required,cron" example:"0 2 * * * *"` // Cron表达式(支持秒级)
 	Command       string   `json:"command" binding:"required" example:"/bin/bash"`               // 执行命令
 	Args          []string `json:"args" binding:"omitempty" example:"backup.sh,--full"`          // 命令参数
-	UseShell      bool     `json:"use_shell" binding:"required" example:"true"`                  // 是否使用Shell
+	UseShell      bool     `json:"use_shell" binding:"omitempty" example:"true"`                 // 是否使用Shell
 	Timeout       int      `json:"timeout" binding:"required,max=7200,gt=0" example:"1800"`      // 超时时间(秒)，最大2小时
 }
 

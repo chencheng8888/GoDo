@@ -46,8 +46,8 @@ func (s *ShellJob) Type() string {
 	return ShellJobType
 }
 
-func (s *ShellJob) Run() {
-	ctx, cancel := context.WithTimeout(context.Background(), s.Timeout)
+func (s *ShellJob) Run(ctx context.Context) {
+	shellCtx, cancel := context.WithTimeout(ctx, s.Timeout)
 	defer cancel()
 
 	var cmd *exec.Cmd
@@ -76,10 +76,10 @@ func (s *ShellJob) Run() {
 			shellArgs = []string{"-c", fullCommand}
 		}
 
-		cmd = exec.CommandContext(ctx, shell, shellArgs...)
+		cmd = exec.CommandContext(shellCtx, shell, shellArgs...)
 	} else {
 		// --- 直接运行可执行文件 (原有的方式) ---
-		cmd = exec.CommandContext(ctx, s.Command, s.Args...)
+		cmd = exec.CommandContext(shellCtx, s.Command, s.Args...)
 	}
 
 	if len(s.workDir) > 0 {
