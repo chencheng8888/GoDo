@@ -23,6 +23,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/chencheng8888/GoDo/scheduler"
 	"os"
 	"os/signal"
 	"syscall"
@@ -30,7 +31,6 @@ import (
 
 	"github.com/chencheng8888/GoDo/api"
 	"github.com/chencheng8888/GoDo/config"
-	"github.com/chencheng8888/GoDo/scheduler"
 	_ "github.com/chencheng8888/GoDo/docs" // 导入swagger文档
 )
 
@@ -44,10 +44,10 @@ func init() {
 
 type App struct {
 	a *api.API
-	s *scheduler.Scheduler
+	s scheduler.Scheduler
 }
 
-func NewApp(a *api.API, s *scheduler.Scheduler) *App {
+func NewApp(a *api.API, s scheduler.Scheduler) *App {
 	return &App{
 		a: a,
 		s: s,
@@ -65,7 +65,10 @@ func main() {
 	}
 
 	go app.a.Run()
-	go app.s.Start()
+	go func() {
+		app.s.InitializeTasks()
+		app.s.Start()
+	}()
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

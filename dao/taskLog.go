@@ -1,7 +1,7 @@
 package dao
 
 import (
-	"github.com/chencheng8888/GoDo/model"
+	"github.com/chencheng8888/GoDo/dao/model"
 	"gorm.io/gorm"
 )
 

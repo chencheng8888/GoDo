@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+const (
+	ShellJobType = "shell"
+)
+
 type ShellJob struct {
 	Command   string        `json:"command"`   // shell 命令
 	Args      []string      `json:"args"`      // 命令参数
@@ -22,7 +26,7 @@ type ShellJob struct {
 	workDir string // 工作目录
 }
 
-func (s *ShellJob) String() string {
+func (s *ShellJob) Content() string {
 	if s == nil {
 		return ""
 	}

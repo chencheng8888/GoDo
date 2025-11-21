@@ -19,6 +19,10 @@ definitions:
         description: 任务描述
         example: 每日数据备份任务
         type: string
+      owner_name:
+        description: 任务拥有者
+        example: admin
+        type: string
       scheduled_time:
         description: Cron表达式(支持秒级)
         example: 0 2 * * * *
@@ -39,26 +43,32 @@ definitions:
     required:
     - command
     - description
+    - owner_name
     - scheduled_time
     - task_name
     - timeout
-    - use_shell
     type: object
   controller.AddShellTaskResponseData:
     description: 添加任务成功响应数据
     properties:
       task_id:
         description: 新创建的任务ID
-        example: 12345
-        type: integer
+        example: "12345"
+        type: string
     type: object
   controller.DeleteTaskRequest:
     description: 删除任务的请求参数
     properties:
       task_id:
         description: 任务ID
-        example: 12345
-        type: integer
+        example: "12345"
+        type: string
+      user_name:
+        description: 任务拥有者
+        example: admin
+        type: string
+    required:
+    - user_name
     type: object
   controller.ListTaskResponseData:
     description: 任务列表响应数据结构
@@ -69,50 +79,6 @@ definitions:
           $ref: '#/definitions/controller.TaskResponse'
         type: array
     type: object
-  controller.LoginRequest:
-    description: 用户登录请求参数
-    properties:
-      password:
-        description: 密码
-        example: password123
-        type: string
-      username:
-        description: 用户名
-        example: admin
-        type: string
-    required:
-    - password
-    - username
-    type: object
-  controller.LoginResponseData:
-    description: 登录成功响应数据
-    properties:
-      token:
-        description: JWT令牌
-        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-        type: string
-    type: object
-  controller.RegisterRequest:
-    description: 用户注册请求参数
-    properties:
-      email:
-        description: 邮箱
-        example: user@example.com
-        type: string
-      password:
-        description: 密码，最少6位
-        example: password123
-        minLength: 6
-        type: string
-      username:
-        description: 用户名
-        example: user123
-        type: string
-    required:
-    - email
-    - password
-    - username
-    type: object
   controller.TaskResponse:
     description: 任务信息响应结构
     properties:
@@ -122,8 +88,8 @@ definitions:
         type: string
       id:
         description: 任务ID
-        example: 12345
-        type: integer
+        example: "12345"
+        type: string
       job:
         description: 任务详情(JSON格式)
         example: '{"command":"/bin/bash","args":["backup.sh"]}'
@@ -175,83 +141,6 @@ info:
   title: GoDo任务调度系统API
   version: "1.0"
 paths:
-  /api/v1/auth/login:
-    post:
-      consumes:
-      - application/json
-      description: 用户登录接口，验证用户名和密码，返回JWT令牌
-      parameters:
-      - description: 登录请求参数
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/controller.LoginRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 登录成功
-          schema:
-            allOf:
-            - $ref: '#/definitions/response.Response'
-            - properties:
-                data:
-                  $ref: '#/definitions/controller.LoginResponseData'
-              type: object
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "401":
-          description: 密码错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "404":
-          description: 用户不存在
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: 服务器内部错误
-          schema:
-            $ref: '#/definitions/response.Response'
-      summary: 用户登录
-      tags:
-      - 用户认证
-  /api/v1/auth/register:
-    post:
-      consumes:
-      - application/json
-      description: 用户注册接口，创建新用户账户
-      parameters:
-      - description: 注册请求参数
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/controller.RegisterRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 注册成功
-          schema:
-            $ref: '#/definitions/response.Response'
-        "400":
-          description: 请求参数错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "409":
-          description: 用户名或邮箱已存在
-          schema:
-            $ref: '#/definitions/response.Response'
-        "500":
-          description: 服务器内部错误
-          schema:
-            $ref: '#/definitions/response.Response'
-      summary: 用户注册
-      tags:
-      - 用户认证
   /api/v1/tasks/add_shell_task:
     post:
       consumes:
@@ -278,10 +167,6 @@ paths:
               type: object
         "400":
           description: 请求参数错误
-          schema:
-            $ref: '#/definitions/response.Response'
-        "401":
-          description: 未授权
           schema:
             $ref: '#/definitions/response.Response'
       security:
@@ -312,10 +197,6 @@ paths:
           description: 请求参数错误
           schema:
             $ref: '#/definitions/response.Response'
-        "401":
-          description: 未授权
-          schema:
-            $ref: '#/definitions/response.Response'
         "500":
           description: 删除任务失败
           schema:
@@ -325,7 +206,7 @@ paths:
       summary: 删除任务
       tags:
       - 任务管理
-  /api/v1/tasks/list:
+  /api/v1/tasks/list/{name}:
     get:
       consumes:
       - application/json
@@ -342,10 +223,6 @@ paths:
                 data:
                   $ref: '#/definitions/controller.ListTaskResponseData'
               type: object
-        "401":
-          description: 未授权
-          schema:
-            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: 获取用户任务列表
@@ -376,10 +253,6 @@ paths:
               type: object
         "400":
           description: 文件未上传
-          schema:
-            $ref: '#/definitions/response.Response'
-        "401":
-          description: 未授权
           schema:
             $ref: '#/definitions/response.Response'
         "500":

@@ -2,7 +2,7 @@ package dao
 
 import (
 	"fmt"
-	"github.com/chencheng8888/GoDo/model"
+	"github.com/chencheng8888/GoDo/dao/model"
 	"gorm.io/gorm"
 )
 
@@ -32,15 +32,11 @@ func (t *TaskInfoDao) GetTaskInfosByOwnerName(ownerName string) ([]*model.TaskIn
 	return taskInfos, err
 }
 
-func (t *TaskInfoDao) DeleteTaskInfoByTaskId(userName string, taskId int) error {
+func (t *TaskInfoDao) DeleteTaskInfoByTaskId(userName string, taskId string) error {
 	res := t.db.Where("owner_name = ? and task_id = ?", userName, taskId).Delete(&model.TaskInfo{})
 
 	if res.RowsAffected == 0 {
 		return fmt.Errorf("no task has been found, so can not be delete")
 	}
 	return res.Error
-}
-
-func (t *TaskInfoDao) UpdateTaskIdByID(Id uint, newTaskId int) error {
-	return t.db.Model(&model.TaskInfo{}).Where("id = ?", Id).Update("task_id", newTaskId).Error
 }

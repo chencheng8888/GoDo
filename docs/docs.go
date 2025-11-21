@@ -24,128 +24,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/auth/login": {
-            "post": {
-                "description": "用户登录接口，验证用户名和密码，返回JWT令牌",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "用户认证"
-                ],
-                "summary": "用户登录",
-                "parameters": [
-                    {
-                        "description": "登录请求参数",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controller.LoginRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "登录成功",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/response.Response"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/controller.LoginResponseData"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "密码错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "用户不存在",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/auth/register": {
-            "post": {
-                "description": "用户注册接口，创建新用户账户",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "用户认证"
-                ],
-                "summary": "用户注册",
-                "parameters": [
-                    {
-                        "description": "注册请求参数",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controller.RegisterRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "注册成功",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "请求参数错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "409": {
-                        "description": "用户名或邮箱已存在",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "服务器内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/tasks/add_shell_task": {
             "post": {
                 "security": [
@@ -199,12 +77,6 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
-                    },
-                    "401": {
-                        "description": "未授权",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
                     }
                 }
             }
@@ -251,12 +123,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Response"
                         }
                     },
-                    "401": {
-                        "description": "未授权",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
                     "500": {
                         "description": "删除任务失败",
                         "schema": {
@@ -266,7 +132,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/tasks/list": {
+        "/api/v1/tasks/list/{name}": {
             "get": {
                 "security": [
                     {
@@ -301,12 +167,6 @@ const docTemplate = `{
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "401": {
-                        "description": "未授权",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
                         }
                     }
                 }
@@ -364,12 +224,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Response"
                         }
                     },
-                    "401": {
-                        "description": "未授权",
-                        "schema": {
-                            "$ref": "#/definitions/response.Response"
-                        }
-                    },
                     "500": {
                         "description": "文件保存失败",
                         "schema": {
@@ -387,10 +241,10 @@ const docTemplate = `{
             "required": [
                 "command",
                 "description",
+                "owner_name",
                 "scheduled_time",
                 "task_name",
-                "timeout",
-                "use_shell"
+                "timeout"
             ],
             "properties": {
                 "args": {
@@ -413,6 +267,11 @@ const docTemplate = `{
                     "description": "任务描述",
                     "type": "string",
                     "example": "每日数据备份任务"
+                },
+                "owner_name": {
+                    "description": "任务拥有者",
+                    "type": "string",
+                    "example": "admin"
                 },
                 "scheduled_time": {
                     "description": "Cron表达式(支持秒级)",
@@ -443,19 +302,27 @@ const docTemplate = `{
             "properties": {
                 "task_id": {
                     "description": "新创建的任务ID",
-                    "type": "integer",
-                    "example": 12345
+                    "type": "string",
+                    "example": "12345"
                 }
             }
         },
         "controller.DeleteTaskRequest": {
             "description": "删除任务的请求参数",
             "type": "object",
+            "required": [
+                "user_name"
+            ],
             "properties": {
                 "task_id": {
                     "description": "任务ID",
-                    "type": "integer",
-                    "example": 12345
+                    "type": "string",
+                    "example": "12345"
+                },
+                "user_name": {
+                    "description": "任务拥有者",
+                    "type": "string",
+                    "example": "admin"
                 }
             }
         },
@@ -472,64 +339,6 @@ const docTemplate = `{
                 }
             }
         },
-        "controller.LoginRequest": {
-            "description": "用户登录请求参数",
-            "type": "object",
-            "required": [
-                "password",
-                "username"
-            ],
-            "properties": {
-                "password": {
-                    "description": "密码",
-                    "type": "string",
-                    "example": "password123"
-                },
-                "username": {
-                    "description": "用户名",
-                    "type": "string",
-                    "example": "admin"
-                }
-            }
-        },
-        "controller.LoginResponseData": {
-            "description": "登录成功响应数据",
-            "type": "object",
-            "properties": {
-                "token": {
-                    "description": "JWT令牌",
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                }
-            }
-        },
-        "controller.RegisterRequest": {
-            "description": "用户注册请求参数",
-            "type": "object",
-            "required": [
-                "email",
-                "password",
-                "username"
-            ],
-            "properties": {
-                "email": {
-                    "description": "邮箱",
-                    "type": "string",
-                    "example": "user@example.com"
-                },
-                "password": {
-                    "description": "密码，最少6位",
-                    "type": "string",
-                    "minLength": 6,
-                    "example": "password123"
-                },
-                "username": {
-                    "description": "用户名",
-                    "type": "string",
-                    "example": "user123"
-                }
-            }
-        },
         "controller.TaskResponse": {
             "description": "任务信息响应结构",
             "type": "object",
@@ -541,8 +350,8 @@ const docTemplate = `{
                 },
                 "id": {
                     "description": "任务ID",
-                    "type": "integer",
-                    "example": 12345
+                    "type": "string",
+                    "example": "12345"
                 },
                 "job": {
                     "description": "任务详情(JSON格式)",

@@ -2,7 +2,7 @@ package dao
 
 import (
 	"github.com/chencheng8888/GoDo/config"
-	"github.com/chencheng8888/GoDo/model"
+	model2 "github.com/chencheng8888/GoDo/dao/model"
 	"github.com/google/wire"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ProviderSet = wire.NewSet(NewDB, NewTaskLogDao, NewTaskInfoDao, NewUserDao)
+	ProviderSet = wire.NewSet(NewDB, NewTaskLogDao, NewTaskInfoDao)
 )
 
 func NewDB(cf *config.DBConfig, log *zap.SugaredLogger) (*gorm.DB, error) {
@@ -23,7 +23,7 @@ func NewDB(cf *config.DBConfig, log *zap.SugaredLogger) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = db.AutoMigrate(&model.TaskLog{}, &model.TaskInfo{}, &model.User{})
+	err = db.AutoMigrate(&model2.TaskLog{}, &model2.TaskInfo{})
 	if err != nil {
 		return nil, err
 	}

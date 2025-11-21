@@ -6,7 +6,7 @@ import (
 
 type TaskLog struct {
 	ID        uint      `gorm:"primarykey"`
-	TaskId    int       `gorm:"column:task_id;index"`
+	TaskId    string    `gorm:"column:task_id;index"`
 	Name      string    `gorm:"type:varchar(100);column:name;index"`   // 任务名称
 	Content   string    `gorm:"type:text;column:content"`              // 任务内容，比如 shell 命令或者 Go 函数描述
 	Output    string    `gorm:"type:text;column:output"`               // 任务执行输出

@@ -7,7 +7,7 @@ import (
 
 type TaskInfo struct {
 	ID            uint      `gorm:"primarykey"`
-	TaskId        int       `gorm:"column:task_id;index"`
+	TaskId        string    `gorm:"column:task_id;type:varchar(255);uniqueIndex"`
 	TaskName      string    `gorm:"column:task_name;index"`
 	ScheduledTime string    `gorm:"column:scheduled_time"`
 	OwnerName     string    `gorm:"column:owner_name"`

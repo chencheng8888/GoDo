@@ -1,29 +1,30 @@
-package scheduler
+package domain
 
 import (
 	"fmt"
+	"github.com/chencheng8888/GoDo/dao/model"
 	"time"
 
-	"github.com/chencheng8888/GoDo/model"
 	"github.com/chencheng8888/GoDo/scheduler/job"
 )
 
 type Task struct {
-	id            int
+	id            string
 	taskName      string // 任务名称
 	scheduledTime string // cron表达式
 	ownerName     string // 拥有者
 	description   string // 描述
-	f             job.Job
+	f             Job
 }
 
 func (t *Task) String() string {
-	return fmt.Sprintf("Task{id: %d, taskName: %s, scheduledTime: %s, ownerName: %s, description: %s, job: %v}",
+	return fmt.Sprintf("Task{id: %v, taskName: %s, scheduledTime: %s, ownerName: %s, description: %s, job: %v}",
 		t.id, t.taskName, t.scheduledTime, t.ownerName, t.description, t.f)
 }
 
-func NewTask(taskName, ownerName, scheduledTime, description string, job job.Job) Task {
+func NewTask(id, taskName, ownerName, scheduledTime, description string, job Job) Task {
 	return Task{
+		id:            id,
 		taskName:      taskName,
 		scheduledTime: scheduledTime,
 		ownerName:     ownerName,
@@ -53,7 +54,7 @@ func NewTaskFromModel(taskInfo *model.TaskInfo) (Task, error) {
 	}, nil
 }
 
-func GetJob(jobType string) (job.Job, error) {
+func GetJob(jobType string) (Job, error) {
 	switch jobType {
 	case job.ShellJobType:
 		return new(job.ShellJob), nil
@@ -69,7 +70,7 @@ type TaskResult struct {
 	ErrOutput string
 }
 
-func (t *Task) GetID() int {
+func (t *Task) GetID() string {
 	return t.id
 }
 
@@ -89,13 +90,6 @@ func (t *Task) GetDescription() string {
 	return t.description
 }
 
-func (t *Task) GetJob() string {
-	if t.f == nil {
-		return ""
-	}
-	return fmt.Sprintf("%v", t.f)
-}
-
-func (t *Task) GetJobType() string {
-	return t.f.Type()
+func (t *Task) GetJob() Job {
+	return t.f
 }

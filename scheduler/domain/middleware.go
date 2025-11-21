@@ -1,9 +1,9 @@
-package scheduler
+package domain
 
 import (
 	"context"
 	"github.com/chencheng8888/GoDo/dao"
-	"github.com/chencheng8888/GoDo/model"
+	"github.com/chencheng8888/GoDo/dao/model"
 	"go.uber.org/zap"
 )
 

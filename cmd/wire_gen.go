@@ -8,12 +8,14 @@ package main
 
 import (
 	"github.com/chencheng8888/GoDo/api"
-	"github.com/chencheng8888/GoDo/auth"
 	"github.com/chencheng8888/GoDo/config"
 	"github.com/chencheng8888/GoDo/controller"
 	"github.com/chencheng8888/GoDo/dao"
+	"github.com/chencheng8888/GoDo/pkg/id_generator"
 	"github.com/chencheng8888/GoDo/pkg/log"
 	"github.com/chencheng8888/GoDo/scheduler"
+	"github.com/chencheng8888/GoDo/scheduler/domain"
+	"github.com/chencheng8888/GoDo/scheduler/implement"
 )
 
 import (
@@ -30,28 +32,26 @@ func WireNewApp(configConfig *config.Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	logMiddleware := scheduler.NewLogMiddleware(sugaredLogger)
+	logMiddleware := domain.NewLogMiddleware(sugaredLogger)
 	dbConfig := config.GetDBConfig(configConfig)
 	db, err := dao.NewDB(dbConfig, sugaredLogger)
 	if err != nil {
 		return nil, err
 	}
 	taskLogDao := dao.NewTaskLogDao(db)
-	taskLogMiddleware := scheduler.NewTaskLogMiddleware(sugaredLogger, taskLogDao)
+	taskLogMiddleware := domain.NewTaskLogMiddleware(sugaredLogger, taskLogDao)
 	taskInfoDao := dao.NewTaskInfoDao(db)
-	schedulerScheduler, err := scheduler.NewScheduler(scheduleConfig, logMiddleware, taskLogMiddleware, taskInfoDao, sugaredLogger)
+	cronScheduler, err := implement.NewCronScheduler(scheduleConfig, logMiddleware, taskLogMiddleware, taskInfoDao, sugaredLogger)
 	if err != nil {
 		return nil, err
 	}
-	taskController, err := controller.NewTaskController(schedulerScheduler, scheduleConfig)
+	schedulerScheduler := scheduler.NewScheduler(cronScheduler)
+	taskIDGenerator := id_generator.NewTaskIDGenerator()
+	taskController, err := controller.NewTaskController(schedulerScheduler, taskIDGenerator, scheduleConfig)
 	if err != nil {
 		return nil, err
 	}
-	userDao := dao.NewUserDao(db)
-	jwtConfig := config.GetJWTConfig(configConfig)
-	authAuth := auth.NewAuth(userDao, jwtConfig)
-	userController := controller.NewUserController(authAuth)
-	engine := api.NewGinEngine(taskController, userController, authAuth, sugaredLogger)
+	engine := api.NewGinEngine(taskController, sugaredLogger)
 	apiAPI := api.NewAPI(serverConfig, engine, sugaredLogger)
 	app := NewApp(apiAPI, schedulerScheduler)
 	return app, nil
