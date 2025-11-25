@@ -4,16 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+
 	"github.com/chencheng8888/GoDo/config"
 	"github.com/chencheng8888/GoDo/dao"
-	"github.com/chencheng8888/GoDo/dao/model"
 	"github.com/chencheng8888/GoDo/pkg/log"
 	"github.com/chencheng8888/GoDo/scheduler/domain"
 	"github.com/panjf2000/ants/v2"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-	"sync"
 )
 
 type CronJobFunc func()
@@ -158,7 +158,7 @@ func (s *CronScheduler) RemoveTask(userName string, taskId string) error {
 
 	err := s.taskInfoDao.DeleteTaskInfoByTaskId(userName, taskId)
 	if err != nil {
-		s.log.Errorf("delete task info by (user_name=%s and task_id=%d) error: %s", userName, taskId, err)
+		s.log.Errorf("delete task info by (user_name=%s and task_id=%s) error: %s", userName, taskId, err)
 		return err
 	}
 
@@ -205,16 +205,4 @@ func (s *CronScheduler) InitializeTasks() {
 		}
 	}
 	s.log.Infof("✅initialize tasks from db finished")
-}
-
-func newModel(task domain.Task) *model.TaskInfo {
-	return &model.TaskInfo{
-		TaskId:        task.GetID(),
-		TaskName:      task.GetTaskName(),
-		OwnerName:     task.GetOwnerName(),
-		ScheduledTime: task.GetScheduledTime(),
-		Description:   task.GetDescription(),
-		JobType:       task.GetJob().Type(),
-		Job:           task.GetJob().ToJson(),
-	}
 }
