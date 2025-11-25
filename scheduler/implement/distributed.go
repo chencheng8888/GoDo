@@ -39,14 +39,13 @@ type DistributedScheduler struct {
 	runningMu   sync.Mutex    // 保护running的互斥锁
 
 	scheduleMapping   map[string]cron.Schedule // cron表达式到schedule的映射，加速解析
-	scheduleMappingMu sync.Mutex               // 保护scheduleMapping的互斥锁
+	scheduleMappingMu sync.RWMutex             // 保护scheduleMapping的互斥锁
 
 	// lua脚本相关
 	registerTaskScript *redis.Script
 	removeTaskScript   *redis.Script
 	getTaskScript      *redis.Script
 
-	stop           chan struct{}    // 停止信号
 	addTaskChan    chan domain.Task // 添加任务信号
 	removeTaskChan chan string      // 删除任务信号
 
@@ -144,15 +143,19 @@ func (d *DistributedScheduler) run() {
 
 	for {
 		select {
-		case <-d.stop:
+		case <-d.schedulerCtx.Done():
 			d.log.Infof("distributed scheduler stopped")
 			return
 		default:
 		}
 
-		res, err := d.rdb.ZRangeWithScores(context.Background(), RedisZSetKey, 0, 0).Result()
+		res, err := d.rdb.ZRangeWithScores(d.schedulerCtx, RedisZSetKey, 0, 0).Result()
 		if err != nil {
 			d.log.Errorf("get redis zset failed: %s", err)
+			if errors.Is(err, context.Canceled) {
+				d.log.Infof("distributed scheduler stopped")
+				return
+			}
 			time.Sleep(time.Second)
 			continue
 		}
@@ -161,8 +164,12 @@ func (d *DistributedScheduler) run() {
 			timer = time.NewTimer(100000 * time.Hour)
 		} else {
 			nextTimeUnix := int64(res[0].Score)
-			nextTime := time.Unix(nextTimeUnix, 0)
-			timer = time.NewTimer(nextTime.Sub(now))
+			nextTime := time.Unix(nextTimeUnix, 0).In(d.location)
+			dur := nextTime.Sub(now)
+			if dur < 0 {
+				dur = 0
+			}
+			timer = time.NewTimer(dur)
 		}
 
 		select {
@@ -171,10 +178,11 @@ func (d *DistributedScheduler) run() {
 			tasks := d.getTaskFromRedis(now.Unix())
 			if len(tasks) > 0 {
 				for _, t := range tasks {
-					// 执行task
+					// 执行task，直接提交task到协程池中去
 					d.executeTask(t)
 					// 执行完task后需要计算下次运行时间，并把task重新加入到redis中
-					d.addTaskToRedis(t, now)
+					// 这里选择使用协程池来执行，防止阻塞主调度协程
+					d.resubmitTask(t, now)
 				}
 			}
 
@@ -187,7 +195,7 @@ func (d *DistributedScheduler) run() {
 			timer.Stop()
 			now = d.now()
 			d.removeTaskFromRedis(removeTaskId)
-		case <-d.stop:
+		case <-d.schedulerCtx.Done():
 			timer.Stop()
 			d.log.Infof("distributed scheduler stopped")
 			return
@@ -207,7 +215,7 @@ func (d *DistributedScheduler) addTaskToRedis(task domain.Task, now time.Time) {
 
 	hashKey := d.generateHashKey(task.GetID())
 
-	res, err := d.registerTaskScript.Run(context.Background(), d.rdb,
+	res, err := d.registerTaskScript.Run(d.schedulerCtx, d.rdb,
 		[]string{hashKey, RedisZSetKey}, nextTime.Unix(), hashKey, payload).Result()
 	if err != nil {
 		d.log.Errorf("failed to add task to redis: %v", err)
@@ -230,7 +238,7 @@ func (d *DistributedScheduler) removeTaskFromRedis(taskId string) {
 	hashKey := d.generateHashKey(taskId)
 
 	// 使用lua脚本来执行删除task的操作
-	res, err := d.removeTaskScript.Run(context.Background(), d.rdb, []string{hashKey, RedisZSetKey}, hashKey).Result()
+	res, err := d.removeTaskScript.Run(d.schedulerCtx, d.rdb, []string{hashKey, RedisZSetKey}, hashKey).Result()
 	if err != nil {
 		d.log.Errorf("failed to remove task from redis: %v", err)
 		return
@@ -251,7 +259,7 @@ func (d *DistributedScheduler) removeTaskFromRedis(taskId string) {
 
 func (d *DistributedScheduler) getTaskFromRedis(score int64) []domain.Task {
 	// TODO: 这边的limit可以尝试配置化
-	payloads, err := d.getTaskScript.Run(context.Background(), d.rdb, []string{RedisZSetKey}, score, 10).Result()
+	payloads, err := d.getTaskScript.Run(d.schedulerCtx, d.rdb, []string{RedisZSetKey}, score, 10).Result()
 	if err != nil {
 		d.log.Errorf("get task from redis failed: %s", err)
 		return nil
@@ -282,11 +290,18 @@ func (d *DistributedScheduler) executeTask(t domain.Task) {
 	}
 }
 
+func (d *DistributedScheduler) resubmitTask(t domain.Task, now time.Time) {
+	err := d.pool.Submit(func() {
+		d.addTaskToRedis(t, now)
+	})
+	if err != nil {
+		d.log.Errorf("submit 'add task to redis' failed: %s", err)
+	}
+}
+
 func (d *DistributedScheduler) Stop() {
 	// 取消上下文
 	d.cancelFunc()
-	// 停止 调度器
-	d.stop <- struct{}{}
 	// 释放 goroutine 池资源
 	d.pool.Release()
 	d.log.Info("✔️Task scheduler stopped")
@@ -360,15 +375,18 @@ func (d *DistributedScheduler) jsonToTask(payload string) (domain.Task, error) {
 }
 
 func (d *DistributedScheduler) parseCronSchedule(c string) (cron.Schedule, error) {
-	d.scheduleMappingMu.Lock()
-	defer d.scheduleMappingMu.Unlock()
+	d.scheduleMappingMu.RLock()
 	schedule, exists := d.scheduleMapping[c]
+	d.scheduleMappingMu.RUnlock()
 	if !exists {
-		schedule, err := d.parser.Parse(c)
+		newSchedule, err := d.parser.Parse(c)
 		if err != nil {
 			return nil, err
 		}
-		d.scheduleMapping[c] = schedule
+		d.scheduleMappingMu.Lock()
+		d.scheduleMapping[c] = newSchedule
+		d.scheduleMappingMu.Unlock()
+		return newSchedule, nil
 	}
 	return schedule, nil
 }
