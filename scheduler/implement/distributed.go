@@ -23,33 +23,37 @@ const (
 	RedisTaskKeyPrefix = RedisPrefix + ":" + "task"
 )
 
+// TODO: 加入分布式锁
+
 type DistributedScheduler struct {
-	parser      cron.Parser
-	rdb         *redis.Client
-	taskInfoDao *dao.TaskInfoDao
-	log         *zap.SugaredLogger
-	pool        *ants.Pool
-	executor    domain.Executor
+	parser      cron.Parser        // 解析cron表达式
+	rdb         *redis.Client      // redis客户端
+	taskInfoDao *dao.TaskInfoDao   // 任务信息DAO
+	log         *zap.SugaredLogger // 日志记录器
+	pool        *ants.Pool         // goroutine池
+	executor    domain.Executor    // 任务执行器
 
-	taskEntries []domain.Task
-	running     bool
-	runningMu   sync.Mutex
+	//TODO: 这边或许可以改造下，把taskEntries改成map，可以加速 "从redis的zset中获取task的payload后解析成task"的过程
+	taskEntries []domain.Task // 在running前记录task
+	running     bool          // 是否已经run
+	runningMu   sync.Mutex    // 保护running的互斥锁
 
-	scheduleMappingMu sync.Mutex
-	scheduleMapping   map[string]cron.Schedule
+	scheduleMapping   map[string]cron.Schedule // cron表达式到schedule的映射，加速解析
+	scheduleMappingMu sync.Mutex               // 保护scheduleMapping的互斥锁
 
+	// lua脚本相关
 	registerTaskScript *redis.Script
 	removeTaskScript   *redis.Script
 	getTaskScript      *redis.Script
 
-	stop           chan struct{}
-	addTaskChan    chan domain.Task
-	removeTaskChan chan string
+	stop           chan struct{}    // 停止信号
+	addTaskChan    chan domain.Task // 添加任务信号
+	removeTaskChan chan string      // 删除任务信号
 
-	schedulerCtx context.Context
-	cancelFunc   context.CancelFunc
+	schedulerCtx context.Context    // 所有job执行的上下文
+	cancelFunc   context.CancelFunc // 取消所有job的函数，与schedulerCtx相对应
 
-	location *time.Location
+	location *time.Location // 时区
 }
 
 func (d *DistributedScheduler) registerScripts() {
@@ -246,6 +250,7 @@ func (d *DistributedScheduler) removeTaskFromRedis(taskId string) {
 }
 
 func (d *DistributedScheduler) getTaskFromRedis(score int64) []domain.Task {
+	// TODO: 这边的limit可以尝试配置化
 	payloads, err := d.getTaskScript.Run(context.Background(), d.rdb, []string{RedisZSetKey}, score, 10).Result()
 	if err != nil {
 		d.log.Errorf("get task from redis failed: %s", err)
