@@ -11,13 +11,9 @@ db:
   # 格式: "用户名:密码@tcp(主机:端口)/数据库名?参数"
   addr: "root:12345678@tcp(localhost:13306)/GoDo?charset=utf8mb4&parseTime=True&loc=Local"
 
-# JWT 认证配置
-jwt:
-  # JWT 签名密钥，生产环境中请更换为复杂的随机字符串
-  secret: "your_jwt_secret_key_change_me_in_production"
-
 # 任务调度配置
 schedule:
+  is_distributed: false # 是否启用分布式调度模式
   with_seconds: true      # 是否启用秒级精度的 Cron 表达式（6位格式）
   work_dir: "./uploads"   # 脚本文件上传和存储目录
   goroutines_size: 10    # 并发执行任务的最大 Goroutine 数量

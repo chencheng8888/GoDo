@@ -5,7 +5,6 @@ type Config struct {
 	Log      *LogConfig      `mapstructure:"log"`
 	Schedule *ScheduleConfig `mapstructure:"schedule"`
 	DB       *DBConfig       `mapstructure:"db"`
-	JWT      *JWTConfig      `mapstructure:"jwt"`
 }
 
 type ServerConfig struct {
@@ -25,6 +24,7 @@ type LogConfig struct {
 }
 
 type ScheduleConfig struct {
+	IsDistributed bool `mapstructure:"is_distributed"` // 是否启用分布式调度
 	WithSeconds    bool   `mapstructure:"with_seconds"`    // 是否启用秒级调度
 	WorkDir        string `mapstructure:"work_dir"`        // 任务工作目录
 	GoroutinesSize int    `mapstructure:"goroutines_size"` // 任务执行协程池大小
@@ -32,10 +32,6 @@ type ScheduleConfig struct {
 
 type DBConfig struct {
 	Addr string `mapstructure:"addr"` // 数据库地址
-}
-
-type JWTConfig struct {
-	Secret string `mapstructure:"secret"` // JWT密钥
 }
 
 func GetScheduleConfig(cf *Config) *ScheduleConfig {
@@ -52,8 +48,4 @@ func GetLogConfig(cf *Config) *LogConfig {
 
 func GetDBConfig(cf *Config) *DBConfig {
 	return cf.DB
-}
-
-func GetJWTConfig(cf *Config) *JWTConfig {
-	return cf.JWT
 }
