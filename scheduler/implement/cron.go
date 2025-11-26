@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/chencheng8888/GoDo/dao/model"
 	"sync"
 
 	"github.com/chencheng8888/GoDo/config"
@@ -205,4 +206,16 @@ func (s *CronScheduler) InitializeTasks() {
 		}
 	}
 	s.log.Infof("✅initialize tasks from db finished")
+}
+
+func newModel(task domain.Task) *model.TaskInfo {
+	return &model.TaskInfo{
+		TaskId:        task.GetID(),
+		TaskName:      task.GetTaskName(),
+		OwnerName:     task.GetOwnerName(),
+		ScheduledTime: task.GetScheduledTime(),
+		Description:   task.GetDescription(),
+		JobType:       task.GetJob().Type(),
+		Job:           task.GetJob().ToJson(),
+	}
 }
