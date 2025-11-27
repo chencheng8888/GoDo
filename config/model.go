@@ -6,6 +6,7 @@ type Config struct {
 	Schedule *ScheduleConfig `mapstructure:"schedule"`
 	DB       *DBConfig       `mapstructure:"db"`
 	Jwt      *JwtConfig      `mapstructure:"jwt"`
+	File     *FileConfig     `mapstructure:"file"`
 }
 
 type ServerConfig struct {
@@ -37,6 +38,11 @@ type DBConfig struct {
 type JwtConfig struct {
 	Secret          string `mapstructure:"secret"`
 	TokenExpiration int    `mapstructure:"token_expiration"` //单位: min
+}
+
+type FileConfig struct {
+	NumberLimit         int `mapstructure:"number_limit"`           // 上传文件数量限制,单位:20
+	SingleFileSizeLimit int `mapstructure:"single_file_size_limit"` // 上传单个文件大小限制,单位:MB
 }
 
 func GetScheduleConfig(cf *Config) *ScheduleConfig {

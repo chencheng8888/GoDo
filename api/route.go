@@ -56,7 +56,9 @@ func InitTaskRoute(authService *auth.AuthService, taskController *controller.Tas
 		g.Use(auth.AuthMiddleware(authService))
 		{
 			g.GET("/list", taskController.ListTasks)
-			g.POST("/upload_script", taskController.UploadScript)
+			g.POST("/upload_file", taskController.UploadFile)
+			g.DELETE("/delete_file", taskController.DeleteFile)
+			g.GET("/list_files", taskController.ListFiles)
 			g.POST("/add_shell_task", taskController.AddShellTask)
 			g.DELETE("/delete", taskController.DeleteTask)
 		}

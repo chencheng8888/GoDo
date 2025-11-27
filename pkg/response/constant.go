@@ -14,7 +14,12 @@ const (
 	BearerRequiredCode
 	InvalidTokenCode
 	LoginFailedCode
-	SignTokenFailed
+	SignTokenFailedCode
+	FileNotFoundCode
+	DeleteFileFailedCode
+	FileTooLargeCode
+	FileNumberLimitCode
+	SearchFailedCode
 )
 
 const (
@@ -27,4 +32,9 @@ const (
 	InvalidTokenMsg                = "Invalid or expired token"
 	LoginFailedMsg                 = "login failed"
 	SignTokenMsg                   = "sign token failed"
+	FileNotFoundMsg                = "file not found"
+	DeleteFileFailedMsg            = "delete file failed"
+	FileTooLargeMsg                = "file too large"
+	FileNumberLimitMsg             = "file number limit exceeded"
+	SearchFailedMsg                = "search failed"
 )

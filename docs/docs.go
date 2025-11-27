@@ -24,6 +24,75 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/auth/login": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "登录",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "鉴权"
+                ],
+                "summary": "登录",
+                "parameters": [
+                    {
+                        "description": "登录参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/controller.LoginResponseData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "login failed",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "sign token failed",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/tasks/add_shell_task": {
             "post": {
                 "security": [
@@ -55,7 +124,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "创建成功",
+                        "description": "success",
                         "schema": {
                             "allOf": [
                                 {
@@ -73,7 +142,13 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "请求参数错误",
+                        "description": "invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired token",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -118,7 +193,13 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "请求参数错误",
+                        "description": "invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired token",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -132,7 +213,76 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/tasks/list/{name}": {
+        "/api/v1/tasks/delete_file": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "删除对应的文件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "任务管理"
+                ],
+                "summary": "删除对应的文件",
+                "parameters": [
+                    {
+                        "description": "文件删除参数",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller.DeleteFileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "file not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "your user account may have been deleted",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "delete file failed",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tasks/list": {
             "get": {
                 "security": [
                     {
@@ -168,18 +318,76 @@ const docTemplate = `{
                                 }
                             ]
                         }
+                    },
+                    "401": {
+                        "description": "Invalid or expired token",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
                     }
                 }
             }
         },
-        "/api/v1/tasks/upload_script": {
+        "/api/v1/tasks/list_files": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "查询已有文件",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "任务管理"
+                ],
+                "summary": "查询已有文件",
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/controller.ListFilesResponseData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or expired token",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "search failed",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tasks/upload_file": {
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "上传脚本文件到服务器，用于后续任务执行",
+                "description": "上传文件到服务器，用于后续任务执行",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -189,11 +397,11 @@ const docTemplate = `{
                 "tags": [
                     "任务管理"
                 ],
-                "summary": "上传脚本文件",
+                "summary": "上传文件",
                 "parameters": [
                     {
                         "type": "file",
-                        "description": "脚本文件",
+                        "description": "文件",
                         "name": "file",
                         "in": "formData",
                         "required": true
@@ -219,13 +427,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "文件未上传",
+                        "description": "file number limit exceeded",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "your request may be unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
-                        "description": "文件保存失败",
+                        "description": "search failed",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -241,7 +455,6 @@ const docTemplate = `{
             "required": [
                 "command",
                 "description",
-                "owner_name",
                 "scheduled_time",
                 "task_name",
                 "timeout"
@@ -254,24 +467,18 @@ const docTemplate = `{
                         "type": "string"
                     },
                     "example": [
-                        "backup.sh",
                         "--full"
                     ]
                 },
                 "command": {
                     "description": "执行命令",
                     "type": "string",
-                    "example": "/bin/bash"
+                    "example": "./backup.sh"
                 },
                 "description": {
                     "description": "任务描述",
                     "type": "string",
                     "example": "每日数据备份任务"
-                },
-                "owner_name": {
-                    "description": "任务拥有者",
-                    "type": "string",
-                    "example": "admin"
                 },
                 "scheduled_time": {
                     "description": "Cron表达式(支持秒级)",
@@ -307,10 +514,21 @@ const docTemplate = `{
                 }
             }
         },
+        "controller.DeleteFileRequest": {
+            "type": "object",
+            "properties": {
+                "file_name": {
+                    "description": "文件名",
+                    "type": "string",
+                    "example": "1699123456789-script.sh"
+                }
+            }
+        },
         "controller.DeleteTaskRequest": {
             "description": "删除任务的请求参数",
             "type": "object",
             "required": [
+                "task_id",
                 "user_name"
             ],
             "properties": {
@@ -326,6 +544,17 @@ const docTemplate = `{
                 }
             }
         },
+        "controller.ListFilesResponseData": {
+            "type": "object",
+            "properties": {
+                "files": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "controller.ListTaskResponseData": {
             "description": "任务列表响应数据结构",
             "type": "object",
@@ -336,6 +565,29 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/controller.TaskResponse"
                     }
+                }
+            }
+        },
+        "controller.LoginRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "controller.LoginResponseData": {
+            "type": "object",
+            "properties": {
+                "token": {
+                    "type": "string"
                 }
             }
         },

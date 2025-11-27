@@ -1,12 +1,17 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"github.com/chencheng8888/GoDo/auth"
+	"github.com/chencheng8888/GoDo/dao"
 	"github.com/chencheng8888/GoDo/pkg/id_generator"
 	"github.com/chencheng8888/GoDo/scheduler"
 	"github.com/chencheng8888/GoDo/scheduler/domain"
+	"go.uber.org/zap"
+	"gorm.io/gorm"
 	"net/http"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -26,19 +31,30 @@ type TaskController struct {
 
 	generator id_generator.TaskIDGenerator
 
+	userDao *dao.UserDao
+
+	userFileDao *dao.UserFileDao
+
 	workDir string
+
+	log *zap.SugaredLogger
+
+	fileNumberLimit     int
+	singleFileSizeLimit int
 }
 
-func NewTaskController(s scheduler.Scheduler, generator id_generator.TaskIDGenerator, cf *config.ScheduleConfig) (*TaskController, error) {
+func NewTaskController(s scheduler.Scheduler, generator id_generator.TaskIDGenerator, cf *config.ScheduleConfig, fileConf *config.FileConfig) (*TaskController, error) {
 	err := pkg.CreateDirIfNotExist(cf.WorkDir)
 	if err != nil {
 		return nil, err
 	}
 
 	return &TaskController{
-		scheduler: s,
-		workDir:   cf.WorkDir,
-		generator: generator,
+		scheduler:           s,
+		workDir:             cf.WorkDir,
+		generator:           generator,
+		fileNumberLimit:     fileConf.NumberLimit,
+		singleFileSizeLimit: fileConf.SingleFileSizeLimit,
 	}, nil
 }
 
@@ -111,30 +127,62 @@ type UploadScriptResponseData struct {
 	FileName string `json:"file_name" example:"1699123456789-script.sh"` // 上传后的文件名
 }
 
-// UploadScript 上传脚本文件
-// @Summary 上传脚本文件
-// @Description 上传脚本文件到服务器，用于后续任务执行
+// UploadFile 上传文件
+// @Summary 上传文件
+// @Description 上传文件到服务器，用于后续任务执行
 // @Tags 任务管理
 // @Accept multipart/form-data
 // @Produce json
 // @Security BearerAuth
-// @Param file formData file true "脚本文件"
+// @Param file formData file true "文件"
 // @Success 200 {object} response.Response{data=UploadScriptResponseData} "上传成功"
 // @Failure 400 {object} response.Response "file not uploaded"
-// @Failure 500 {object} response.Response "file save failed"
+// @Failure 400 {object} response.Response "file too large"
+// @Failure 400 {object} response.Response "file number limit exceeded"
 // @Failure 401 {object} response.Response "Authorization header required"
 // @Failure 401 {object} response.Response "Authorization header format must be Bearer <token>"
 // @Failure 401 {object} response.Response "Invalid or expired token"
-// @Router /api/v1/tasks/upload_script [post]
-func (tc *TaskController) UploadScript(c *gin.Context) {
+// @Failure 401 {object} response.Response "your request may be unauthorized"
+// @Failure 500 {object} response.Response "file save failed"
+// @Failure 500 {object} response.Response "search failed"
+// @Router /api/v1/tasks/upload_file [post]
+func (tc *TaskController) UploadFile(c *gin.Context) {
+	name, ok := auth.GetUsernameFromContext(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, response.Error(response.InvalidRequestCode, "your request may be unauthorized"))
+		return
+	}
+
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.Error(response.FileNotUploadedCode, response.FileNotUploadedMsg))
 		return
 	}
 
+	if file.Size > int64(tc.singleFileSizeLimit)*1024*1024 {
+		c.JSON(http.StatusBadRequest, response.Error(response.FileTooLargeCode, response.FileTooLargeMsg))
+		return
+	}
+
+	cnt, err := tc.userFileDao.CountFiles(name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.Error(response.SearchFailedCode, response.SearchFailedMsg))
+		return
+	}
+
+	if cnt > int64(tc.fileNumberLimit) {
+		c.JSON(http.StatusBadRequest, response.Error(response.FileNumberLimitCode, response.FileNumberLimitMsg))
+		return
+	}
+
 	fileName := fmt.Sprintf("%d-%s", time.Now().UnixMilli(), filepath.Base(file.Filename))
 	savePath := filepath.Join(tc.workDir, fileName)
+
+	err = tc.userFileDao.AddUserFileRecord(name, fileName, file.Size)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.Error(response.FileSaveFailedCode, response.FileSaveFailedMsg))
+		return
+	}
 
 	err = c.SaveUploadedFile(file, savePath, 0755)
 	if err != nil {
@@ -143,6 +191,107 @@ func (tc *TaskController) UploadScript(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, response.Success(UploadScriptResponseData{FileName: fileName}))
+}
+
+type DeleteFileRequest struct {
+	FileName string `json:"file_name" example:"1699123456789-script.sh"` // 文件名
+}
+
+// DeleteFile 删除对应的文件
+// @Summary 删除对应的文件
+// @Description 删除对应的文件
+// @Tags 任务管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body DeleteFileRequest true "文件删除参数"
+// @Success 200 {object} response.Response{data=nil} "success"
+// @Failure 400 {object} response.Response "invalid request"
+// @Failure 400 {object} response.Response "file not found"
+// @Failure 401 {object} response.Response "your request may be unauthorized"
+// @Failure 401 {object} response.Response "Authorization header required"
+// @Failure 401 {object} response.Response "Authorization header format must be Bearer <token>"
+// @Failure 401 {object} response.Response "Invalid or expired token"
+// @Failure 401 {object} response.Response "your user account may have been deleted"
+// @Failure 500 {object} response.Response "delete file failed"
+// @Router /api/v1/tasks/delete_file [delete]
+func (tc *TaskController) DeleteFile(c *gin.Context) {
+	name, ok := auth.GetUsernameFromContext(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, response.Error(response.InvalidRequestCode, "your request may be unauthorized"))
+		return
+	}
+
+	var req DeleteFileRequest
+
+	if err := c.ShouldBindBodyWithJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.Error(response.InvalidRequestCode, fmt.Sprintf("%s:%s", response.InvalidRequestMsg, err.Error())))
+		return
+	}
+
+	_, err := tc.userDao.GetUser(name)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusUnauthorized, response.Error(response.InvalidRequestCode, "your user account may have been deleted"))
+		return
+	}
+
+	err = tc.userFileDao.DeleteUserFileRecord(name, req.FileName)
+	if errors.Is(err, dao.UserFileNotFoundErr) {
+		c.JSON(http.StatusBadRequest, response.Error(response.FileNotFoundCode, response.FileNotFoundMsg))
+		return
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, response.Error(response.DeleteFileFailedCode, response.DeleteFileFailedMsg))
+		return
+	}
+
+	fullPath := filepath.Join(tc.workDir, req.FileName)
+
+	err = os.Remove(fullPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			tc.log.Errorf("the file [%v] to be deleted does not exist,user:%v", req.FileName, name)
+		} else {
+			tc.log.Errorf("failed to delete file [%v],user:%v,error:%v", req.FileName, name, err)
+		}
+
+		c.JSON(http.StatusInternalServerError, response.Error(response.DeleteFileFailedCode, response.DeleteFileFailedMsg))
+		return
+	}
+	c.JSON(http.StatusOK, response.Success(nil))
+}
+
+type ListFilesResponseData struct {
+	Files []string `json:"files"`
+}
+
+// ListFiles 查询已有文件
+// @Summary 查询已有文件
+// @Description 查询已有文件
+// @Tags 任务管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} response.Response{data=ListFilesResponseData} "success"
+// @Failure 401 {object} response.Response "your request may be unauthorized"
+// @Failure 401 {object} response.Response "Authorization header required"
+// @Failure 401 {object} response.Response "Authorization header format must be Bearer <token>"
+// @Failure 401 {object} response.Response "Invalid or expired token"
+// @Failure 500 {object} response.Response "search failed"
+// @Router /api/v1/tasks/list_files [get]
+func (tc *TaskController) ListFiles(c *gin.Context) {
+	name, ok := auth.GetUsernameFromContext(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, response.Error(response.InvalidRequestCode, "your request may be unauthorized"))
+		return
+	}
+
+	files, err := tc.userFileDao.ListUserFiles(name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.Error(response.SearchFailedCode, response.SearchFailedMsg))
+		return
+	}
+
+	c.JSON(http.StatusOK, response.Success(ListFilesResponseData{Files: files}))
 }
 
 // AddShellTaskRequest 添加Shell任务请求

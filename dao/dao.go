@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ProviderSet = wire.NewSet(NewDB, NewTaskLogDao, NewTaskInfoDao, NewUserDao)
+	ProviderSet = wire.NewSet(NewDB, NewTaskLogDao, NewTaskInfoDao, NewUserDao, NewUserFileDao)
 )
 
 func NewDB(cf *config.DBConfig, log *zap.SugaredLogger) (*gorm.DB, error) {

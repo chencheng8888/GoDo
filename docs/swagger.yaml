@@ -6,22 +6,17 @@ definitions:
       args:
         description: 命令参数
         example:
-        - backup.sh
         - --full
         items:
           type: string
         type: array
       command:
         description: 执行命令
-        example: /bin/bash
+        example: ./backup.sh
         type: string
       description:
         description: 任务描述
         example: 每日数据备份任务
-        type: string
-      owner_name:
-        description: 任务拥有者
-        example: admin
         type: string
       scheduled_time:
         description: Cron表达式(支持秒级)
@@ -43,7 +38,6 @@ definitions:
     required:
     - command
     - description
-    - owner_name
     - scheduled_time
     - task_name
     - timeout
@@ -54,6 +48,13 @@ definitions:
       task_id:
         description: 新创建的任务ID
         example: "12345"
+        type: string
+    type: object
+  controller.DeleteFileRequest:
+    properties:
+      file_name:
+        description: 文件名
+        example: 1699123456789-script.sh
         type: string
     type: object
   controller.DeleteTaskRequest:
@@ -68,7 +69,15 @@ definitions:
         example: admin
         type: string
     required:
+    - task_id
     - user_name
+    type: object
+  controller.ListFilesResponseData:
+    properties:
+      files:
+        items:
+          type: string
+        type: array
     type: object
   controller.ListTaskResponseData:
     description: 任务列表响应数据结构
@@ -78,6 +87,21 @@ definitions:
         items:
           $ref: '#/definitions/controller.TaskResponse'
         type: array
+    type: object
+  controller.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  controller.LoginResponseData:
+    properties:
+      token:
+        type: string
     type: object
   controller.TaskResponse:
     description: 任务信息响应结构
@@ -141,6 +165,47 @@ info:
   title: GoDo任务调度系统API
   version: "1.0"
 paths:
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 登录
+      parameters:
+      - description: 登录参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/controller.LoginResponseData'
+              type: object
+        "400":
+          description: invalid request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: login failed
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: sign token failed
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 登录
+      tags:
+      - 鉴权
   /api/v1/tasks/add_shell_task:
     post:
       consumes:
@@ -157,7 +222,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: 创建成功
+          description: success
           schema:
             allOf:
             - $ref: '#/definitions/response.Response'
@@ -166,7 +231,11 @@ paths:
                   $ref: '#/definitions/controller.AddShellTaskResponseData'
               type: object
         "400":
-          description: 请求参数错误
+          description: invalid request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Invalid or expired token
           schema:
             $ref: '#/definitions/response.Response'
       security:
@@ -194,7 +263,11 @@ paths:
           schema:
             $ref: '#/definitions/response.Response'
         "400":
-          description: 请求参数错误
+          description: invalid request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Invalid or expired token
           schema:
             $ref: '#/definitions/response.Response'
         "500":
@@ -206,7 +279,48 @@ paths:
       summary: 删除任务
       tags:
       - 任务管理
-  /api/v1/tasks/list/{name}:
+  /api/v1/tasks/delete_file:
+    delete:
+      consumes:
+      - application/json
+      description: 删除对应的文件
+      parameters:
+      - description: 文件删除参数
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.DeleteFileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: file not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: your user account may have been deleted
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: delete file failed
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除对应的文件
+      tags:
+      - 任务管理
+  /api/v1/tasks/list:
     get:
       consumes:
       - application/json
@@ -223,18 +337,52 @@ paths:
                 data:
                   $ref: '#/definitions/controller.ListTaskResponseData'
               type: object
+        "401":
+          description: Invalid or expired token
+          schema:
+            $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
       summary: 获取用户任务列表
       tags:
       - 任务管理
-  /api/v1/tasks/upload_script:
+  /api/v1/tasks/list_files:
+    get:
+      consumes:
+      - application/json
+      description: 查询已有文件
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/controller.ListFilesResponseData'
+              type: object
+        "401":
+          description: Invalid or expired token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: search failed
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 查询已有文件
+      tags:
+      - 任务管理
+  /api/v1/tasks/upload_file:
     post:
       consumes:
       - multipart/form-data
-      description: 上传脚本文件到服务器，用于后续任务执行
+      description: 上传文件到服务器，用于后续任务执行
       parameters:
-      - description: 脚本文件
+      - description: 文件
         in: formData
         name: file
         required: true
@@ -252,16 +400,20 @@ paths:
                   $ref: '#/definitions/controller.UploadScriptResponseData'
               type: object
         "400":
-          description: 文件未上传
+          description: file number limit exceeded
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: your request may be unauthorized
           schema:
             $ref: '#/definitions/response.Response'
         "500":
-          description: 文件保存失败
+          description: search failed
           schema:
             $ref: '#/definitions/response.Response'
       security:
       - BearerAuth: []
-      summary: 上传脚本文件
+      summary: 上传文件
       tags:
       - 任务管理
 securityDefinitions:
