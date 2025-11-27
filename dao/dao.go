@@ -23,7 +23,7 @@ func NewDB(cf *config.DBConfig, log *zap.SugaredLogger) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = db.AutoMigrate(&model2.TaskLog{}, &model2.TaskInfo{}, &model2.User{})
+	err = db.AutoMigrate(&model2.TaskLog{}, &model2.TaskInfo{}, &model2.User{}, &model2.UserFile{})
 	if err != nil {
 		return nil, err
 	}
