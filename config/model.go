@@ -24,7 +24,6 @@ type LogConfig struct {
 }
 
 type ScheduleConfig struct {
-	IsDistributed bool `mapstructure:"is_distributed"` // 是否启用分布式调度
 	WithSeconds    bool   `mapstructure:"with_seconds"`    // 是否启用秒级调度
 	WorkDir        string `mapstructure:"work_dir"`        // 任务工作目录
 	GoroutinesSize int    `mapstructure:"goroutines_size"` // 任务执行协程池大小

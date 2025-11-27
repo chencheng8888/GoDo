@@ -13,7 +13,6 @@ db:
 
 # 任务调度配置
 schedule:
-  is_distributed: false # 是否启用分布式调度模式
   with_seconds: true      # 是否启用秒级精度的 Cron 表达式（6位格式）
   work_dir: "./uploads"   # 脚本文件上传和存储目录
   goroutines_size: 10    # 并发执行任务的最大 Goroutine 数量
