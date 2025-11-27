@@ -64,3 +64,7 @@ func GetDBConfig(cf *Config) *DBConfig {
 func GetJwtConfig(cf *Config) *JwtConfig {
 	return cf.Jwt
 }
+
+func GetFileConfig(cf *Config) *FileConfig {
+	return cf.File
+}

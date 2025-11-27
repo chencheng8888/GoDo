@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	ProviderSet = wire.NewSet(GetServerConfig, GetLogConfig, GetScheduleConfig, GetDBConfig, GetJwtConfig)
+	ProviderSet = wire.NewSet(GetServerConfig, GetLogConfig, GetScheduleConfig, GetDBConfig, GetJwtConfig, GetFileConfig)
 )
 
 func LoadConfig(configPath string) *Config {
