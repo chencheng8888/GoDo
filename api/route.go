@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/chencheng8888/GoDo/auth"
 	"github.com/chencheng8888/GoDo/controller"
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
@@ -20,7 +21,7 @@ func (f RouteInitFunc) InitRoute(r *gin.Engine) {
 	f(r)
 }
 
-func NewGinEngine(taskController *controller.TaskController, logger *zap.SugaredLogger) *gin.Engine {
+func NewGinEngine(authService *auth.AuthService, authController *controller.AuthController, taskController *controller.TaskController, logger *zap.SugaredLogger) *gin.Engine {
 	r := gin.New()
 	r.Use(ginzap.Ginzap(logger.Desugar(), time.RFC3339, true))
 	r.Use(ginzap.RecoveryWithZap(logger.Desugar(), true))
@@ -28,7 +29,7 @@ func NewGinEngine(taskController *controller.TaskController, logger *zap.Sugared
 	// Swagger文档路由
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 
-	InitRoutes(r, InitTaskRoute(taskController))
+	InitRoutes(r, InitAuthRoute(authController), InitTaskRoute(authService, taskController))
 	return r
 }
 
@@ -38,12 +39,23 @@ func InitRoutes(r *gin.Engine, initer ...RouteIniter) {
 	}
 }
 
-func InitTaskRoute(taskController *controller.TaskController) RouteIniter {
+func InitAuthRoute(authController *controller.AuthController) RouteIniter {
 	return RouteInitFunc(func(r *gin.Engine) {
-		g := r.Group("/api/v1/tasks")
+		g := r.Group("/api/v1/auth")
 
 		{
-			g.GET("/list/:name", taskController.ListTasks)
+			g.POST("/login", authController.Login)
+		}
+	})
+}
+
+func InitTaskRoute(authService *auth.AuthService, taskController *controller.TaskController) RouteIniter {
+	return RouteInitFunc(func(r *gin.Engine) {
+		g := r.Group("/api/v1/tasks")
+		// need auth
+		g.Use(auth.AuthMiddleware(authService))
+		{
+			g.GET("/list", taskController.ListTasks)
 			g.POST("/upload_script", taskController.UploadScript)
 			g.POST("/add_shell_task", taskController.AddShellTask)
 			g.DELETE("/delete", taskController.DeleteTask)

@@ -3,5 +3,5 @@ package controller
 import "github.com/google/wire"
 
 var (
-	ProviderSet = wire.NewSet(NewTaskController)
+	ProviderSet = wire.NewSet(NewTaskController, NewAuthController)
 )

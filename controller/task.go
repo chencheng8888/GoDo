@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"github.com/chencheng8888/GoDo/auth"
 	"github.com/chencheng8888/GoDo/pkg/id_generator"
 	"github.com/chencheng8888/GoDo/scheduler"
 	"github.com/chencheng8888/GoDo/scheduler/domain"
@@ -80,10 +81,18 @@ type ListTaskResponseData struct {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} response.Response{data=ListTaskResponseData} "获取成功"
-// @Router /api/v1/tasks/list/{name} [get]
+// @Failure 401 {object} response.Response "your request may be unauthorized"
+// @Failure 401 {object} response.Response "Authorization header required"
+// @Failure 401 {object} response.Response "Authorization header format must be Bearer <token>"
+// @Failure 401 {object} response.Response "Invalid or expired token"
+// @Router /api/v1/tasks/list [get]
 func (tc *TaskController) ListTasks(c *gin.Context) {
 
-	name := c.Param("name")
+	name, ok := auth.GetUsernameFromContext(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, response.Error(response.InvalidRequestCode, "your request may be unauthorized"))
+		return
+	}
 
 	tasks := tc.scheduler.ListTasks(name)
 
@@ -111,8 +120,11 @@ type UploadScriptResponseData struct {
 // @Security BearerAuth
 // @Param file formData file true "脚本文件"
 // @Success 200 {object} response.Response{data=UploadScriptResponseData} "上传成功"
-// @Failure 400 {object} response.Response "文件未上传"
-// @Failure 500 {object} response.Response "文件保存失败"
+// @Failure 400 {object} response.Response "file not uploaded"
+// @Failure 500 {object} response.Response "file save failed"
+// @Failure 401 {object} response.Response "Authorization header required"
+// @Failure 401 {object} response.Response "Authorization header format must be Bearer <token>"
+// @Failure 401 {object} response.Response "Invalid or expired token"
 // @Router /api/v1/tasks/upload_script [post]
 func (tc *TaskController) UploadScript(c *gin.Context) {
 	file, err := c.FormFile("file")
@@ -137,11 +149,10 @@ func (tc *TaskController) UploadScript(c *gin.Context) {
 // @Description 添加Shell任务的请求参数
 type AddShellTaskRequest struct {
 	TaskName      string   `json:"task_name" binding:"required" example:"daily-backup"`          // 任务名称
-	OwnerName     string   `json:"owner_name" binding:"required" example:"admin"`                // 任务拥有者
 	Description   string   `json:"description" binding:"required" example:"每日数据备份任务"`            // 任务描述
 	ScheduledTime string   `json:"scheduled_time" binding:"required,cron" example:"0 2 * * * *"` // Cron表达式(支持秒级)
-	Command       string   `json:"command" binding:"required" example:"/bin/bash"`               // 执行命令
-	Args          []string `json:"args" binding:"omitempty" example:"backup.sh,--full"`          // 命令参数
+	Command       string   `json:"command" binding:"required" example:"./backup.sh"`             // 执行命令
+	Args          []string `json:"args" binding:"omitempty" example:"--full"`                    // 命令参数
 	UseShell      bool     `json:"use_shell" binding:"omitempty" example:"true"`                 // 是否使用Shell
 	Timeout       int      `json:"timeout" binding:"required,max=7200,gt=0" example:"1800"`      // 超时时间(秒)，最大2小时
 }
@@ -160,10 +171,20 @@ type AddShellTaskResponseData struct {
 // @Produce json
 // @Security BearerAuth
 // @Param request body AddShellTaskRequest true "任务创建参数"
-// @Success 200 {object} response.Response{data=AddShellTaskResponseData} "创建成功"
-// @Failure 400 {object} response.Response "请求参数错误"
+// @Success 200 {object} response.Response{data=AddShellTaskResponseData} "success"
+// @Failure 400 {object} response.Response "invalid request"
+// @Failure 401 {object} response.Response "your request may be unauthorized"
+// @Failure 401 {object} response.Response "Authorization header required"
+// @Failure 401 {object} response.Response "Authorization header format must be Bearer <token>"
+// @Failure 401 {object} response.Response "Invalid or expired token"
 // @Router /api/v1/tasks/add_shell_task [post]
 func (tc *TaskController) AddShellTask(c *gin.Context) {
+	name, ok := auth.GetUsernameFromContext(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, response.Error(response.InvalidRequestCode, "your request may be unauthorized"))
+		return
+	}
+
 	var req AddShellTaskRequest
 	if err := c.ShouldBindBodyWithJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, response.Error(response.InvalidRequestCode, fmt.Sprintf("%s:%s", response.InvalidRequestMsg, err.Error())))
@@ -174,7 +195,7 @@ func (tc *TaskController) AddShellTask(c *gin.Context) {
 
 	taskID := tc.generator.Generate(TaskIDPrefix)
 
-	task := domain.NewTask(taskID, req.TaskName, req.OwnerName, req.ScheduledTime, req.Description, shellJob)
+	task := domain.NewTask(taskID, req.TaskName, name, req.ScheduledTime, req.Description, shellJob)
 	err := tc.scheduler.AddTask(task)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.Error(response.InvalidRequestCode, fmt.Sprintf("%s:%s", response.InvalidRequestMsg, err.Error())))
@@ -187,7 +208,7 @@ func (tc *TaskController) AddShellTask(c *gin.Context) {
 // @Description 删除任务的请求参数
 type DeleteTaskRequest struct {
 	UserName string `json:"user_name" binding:"required" example:"admin"` // 任务拥有者
-	TaskID   string `json:"task_id" example:"12345"`                      // 任务ID
+	TaskID   string `json:"task_id"  binding:"required" example:"12345"`  // 任务ID
 }
 
 // DeleteTask 删除任务
@@ -199,8 +220,11 @@ type DeleteTaskRequest struct {
 // @Security BearerAuth
 // @Param request body DeleteTaskRequest true "删除任务参数"
 // @Success 200 {object} response.Response "删除成功"
-// @Failure 400 {object} response.Response "请求参数错误"
+// @Failure 400 {object} response.Response "invalid request"
 // @Failure 500 {object} response.Response "删除任务失败"
+// @Failure 401 {object} response.Response "Authorization header required"
+// @Failure 401 {object} response.Response "Authorization header format must be Bearer <token>"
+// @Failure 401 {object} response.Response "Invalid or expired token"
 // @Router /api/v1/tasks/delete [delete]
 func (tc *TaskController) DeleteTask(c *gin.Context) {
 	var req DeleteTaskRequest

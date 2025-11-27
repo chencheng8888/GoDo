@@ -3,16 +3,28 @@ package response
 const (
 	SuccessCode = 200
 	SuccessMsg  = "success"
+)
 
-	InvalidRequestCode = 4001
-	InvalidRequestMsg  = "invalid request"
+const (
+	InvalidRequestCode = 4000 + iota
+	FileNotUploadedCode
+	FileSaveFailedCode
+	DeleteTaskFailedCode
+	AuthorizationHeaderRequiredCode
+	BearerRequiredCode
+	InvalidTokenCode
+	LoginFailedCode
+	SignTokenFailed
+)
 
-	FileNotUploadedCode = 4002
-	FileNotUploadedMsg  = "file not uploaded"
-
-	FileSaveFailedCode = 4003
-	FileSaveFailedMsg  = "file save failed"
-
-	DeleteTaskFailedCode = 4004
-	DeleteTaskFailedMsg  = "delete task failed"
+const (
+	InvalidRequestMsg              = "invalid request"
+	FileNotUploadedMsg             = "file not uploaded"
+	FileSaveFailedMsg              = "file save failed"
+	DeleteTaskFailedMsg            = "delete task failed"
+	AuthorizationHeaderRequiredMsg = "Authorization header required"
+	BearerRequiredMsg              = "Authorization header format must be Bearer <token>"
+	InvalidTokenMsg                = "Invalid or expired token"
+	LoginFailedMsg                 = "login failed"
+	SignTokenMsg                   = "sign token failed"
 )

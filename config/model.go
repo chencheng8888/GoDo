@@ -5,6 +5,7 @@ type Config struct {
 	Log      *LogConfig      `mapstructure:"log"`
 	Schedule *ScheduleConfig `mapstructure:"schedule"`
 	DB       *DBConfig       `mapstructure:"db"`
+	Jwt      *JwtConfig      `mapstructure:"jwt"`
 }
 
 type ServerConfig struct {
@@ -33,6 +34,11 @@ type DBConfig struct {
 	Addr string `mapstructure:"addr"` // 数据库地址
 }
 
+type JwtConfig struct {
+	Secret          string `mapstructure:"secret"`
+	TokenExpiration int    `mapstructure:"token_expiration"` //单位: min
+}
+
 func GetScheduleConfig(cf *Config) *ScheduleConfig {
 	return cf.Schedule
 }
@@ -47,4 +53,8 @@ func GetLogConfig(cf *Config) *LogConfig {
 
 func GetDBConfig(cf *Config) *DBConfig {
 	return cf.DB
+}
+
+func GetJwtConfig(cf *Config) *JwtConfig {
+	return cf.Jwt
 }

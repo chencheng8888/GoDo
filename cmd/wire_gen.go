@@ -8,6 +8,7 @@ package main
 
 import (
 	"github.com/chencheng8888/GoDo/api"
+	"github.com/chencheng8888/GoDo/auth"
 	"github.com/chencheng8888/GoDo/config"
 	"github.com/chencheng8888/GoDo/controller"
 	"github.com/chencheng8888/GoDo/dao"
@@ -26,18 +27,22 @@ import (
 
 func WireNewApp(configConfig *config.Config) (*App, error) {
 	serverConfig := config.GetServerConfig(configConfig)
-	scheduleConfig := config.GetScheduleConfig(configConfig)
+	dbConfig := config.GetDBConfig(configConfig)
 	logConfig := config.GetLogConfig(configConfig)
 	sugaredLogger, err := log.NewZapSugaredLogger(logConfig)
 	if err != nil {
 		return nil, err
 	}
-	logMiddleware := domain.NewLogMiddleware(sugaredLogger)
-	dbConfig := config.GetDBConfig(configConfig)
 	db, err := dao.NewDB(dbConfig, sugaredLogger)
 	if err != nil {
 		return nil, err
 	}
+	userDao := dao.NewUserDao(db)
+	jwtConfig := config.GetJwtConfig(configConfig)
+	authService := auth.NewAuthService(userDao, jwtConfig)
+	authController := controller.NewAuthController(authService)
+	scheduleConfig := config.GetScheduleConfig(configConfig)
+	logMiddleware := domain.NewLogMiddleware(sugaredLogger)
 	taskLogDao := dao.NewTaskLogDao(db)
 	taskLogMiddleware := domain.NewTaskLogMiddleware(sugaredLogger, taskLogDao)
 	taskInfoDao := dao.NewTaskInfoDao(db)
@@ -51,7 +56,7 @@ func WireNewApp(configConfig *config.Config) (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	engine := api.NewGinEngine(taskController, sugaredLogger)
+	engine := api.NewGinEngine(authService, authController, taskController, sugaredLogger)
 	apiAPI := api.NewAPI(serverConfig, engine, sugaredLogger)
 	app := NewApp(apiAPI, schedulerScheduler)
 	return app, nil
