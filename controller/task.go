@@ -95,16 +95,17 @@ type ListTaskResponseData struct {
 
 // ListTasks 获取任务列表
 // @Summary 获取用户任务列表
-// @Description 根据JWT token中的用户名获取该用户的所有任务
+// @Description 根据 JWT token 中的用户名获取该用户的所有任务
 // @Tags 任务管理
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} response.Response{data=ListTaskResponseData} "获取成功"
-// @Failure 401 {object} response.Response "your request may be unauthorized"
-// @Failure 401 {object} response.Response "Authorization header required"
-// @Failure 401 {object} response.Response "Authorization header format must be Bearer <token>"
-// @Failure 401 {object} response.Response "Invalid or expired token"
+// @Failure 401 {object} response.Response "Unauthorized:
+// - your request may be unauthorized
+// - Authorization header required
+// - Authorization header format must be Bearer <token>
+// - Invalid or expired token"
 // @Router /api/v1/tasks/list [get]
 func (tc *TaskController) ListTasks(c *gin.Context) {
 
@@ -140,15 +141,9 @@ type UploadScriptResponseData struct {
 // @Security BearerAuth
 // @Param file formData file true "文件"
 // @Success 200 {object} response.Response{data=UploadScriptResponseData} "上传成功"
-// @Failure 400 {object} response.Response "file not uploaded"
-// @Failure 400 {object} response.Response "file too large"
-// @Failure 400 {object} response.Response "file number limit exceeded"
-// @Failure 401 {object} response.Response "Authorization header required"
-// @Failure 401 {object} response.Response "Authorization header format must be Bearer <token>"
-// @Failure 401 {object} response.Response "Invalid or expired token"
-// @Failure 401 {object} response.Response "your request may be unauthorized"
-// @Failure 500 {object} response.Response "file save failed"
-// @Failure 500 {object} response.Response "search failed"
+// @Failure 400 {object} response.Response "Bad Request: file not uploaded; file too large; file number limit exceeded"
+// @Failure 401 {object} response.Response "Unauthorized: Authorization header required; wrong format (must be Bearer <token>); invalid or expired token; your request may be unauthorized"
+// @Failure 500 {object} response.Response "Server Error: file save failed; search failed"
 // @Router /api/v1/tasks/upload_file [post]
 func (tc *TaskController) UploadFile(c *gin.Context) {
 	name, ok := auth.GetUsernameFromContext(c)
@@ -210,14 +205,9 @@ type DeleteFileRequest struct {
 // @Security BearerAuth
 // @Param request body DeleteFileRequest true "文件删除参数"
 // @Success 200 {object} response.Response{data=nil} "success"
-// @Failure 400 {object} response.Response "invalid request"
-// @Failure 400 {object} response.Response "file not found"
-// @Failure 401 {object} response.Response "your request may be unauthorized"
-// @Failure 401 {object} response.Response "Authorization header required"
-// @Failure 401 {object} response.Response "Authorization header format must be Bearer <token>"
-// @Failure 401 {object} response.Response "Invalid or expired token"
-// @Failure 401 {object} response.Response "your user account may have been deleted"
-// @Failure 500 {object} response.Response "delete file failed"
+// @Failure 400 {object} response.Response "Bad Request: invalid request; file not found"
+// @Failure 401 {object} response.Response "Unauthorized: your request may be unauthorized; Authorization header required; Authorization header format must be Bearer <token>; Invalid or expired token; your user account may have been deleted"
+// @Failure 500 {object} response.Response "Internal Server Error: delete file failed"
 // @Router /api/v1/tasks/delete_file [delete]
 func (tc *TaskController) DeleteFile(c *gin.Context) {
 	name, ok := auth.GetUsernameFromContext(c)
@@ -276,11 +266,8 @@ type ListFilesResponseData struct {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} response.Response{data=ListFilesResponseData} "success"
-// @Failure 401 {object} response.Response "your request may be unauthorized"
-// @Failure 401 {object} response.Response "Authorization header required"
-// @Failure 401 {object} response.Response "Authorization header format must be Bearer <token>"
-// @Failure 401 {object} response.Response "Invalid or expired token"
-// @Failure 500 {object} response.Response "search failed"
+// @Failure 401 {object} response.Response "Unauthorized: your request may be unauthorized; Authorization header required; Authorization header must be Bearer <token>; Invalid or expired token"
+// @Failure 500 {object} response.Response "Internal Server Error: search failed"
 // @Router /api/v1/tasks/list_files [get]
 func (tc *TaskController) ListFiles(c *gin.Context) {
 	name, ok := auth.GetUsernameFromContext(c)
@@ -325,11 +312,8 @@ type AddShellTaskResponseData struct {
 // @Security BearerAuth
 // @Param request body AddShellTaskRequest true "任务创建参数"
 // @Success 200 {object} response.Response{data=AddShellTaskResponseData} "success"
-// @Failure 400 {object} response.Response "invalid request"
-// @Failure 401 {object} response.Response "your request may be unauthorized"
-// @Failure 401 {object} response.Response "Authorization header required"
-// @Failure 401 {object} response.Response "Authorization header format must be Bearer <token>"
-// @Failure 401 {object} response.Response "Invalid or expired token"
+// @Failure 400 {object} response.Response "Bad request: invalid request"
+// @Failure 401 {object} response.Response "Unauthorized: your request may be unauthorized; Authorization header required; Authorization header must be Bearer <token>; Invalid or expired token"
 // @Router /api/v1/tasks/add_shell_task [post]
 func (tc *TaskController) AddShellTask(c *gin.Context) {
 	name, ok := auth.GetUsernameFromContext(c)
@@ -374,10 +358,8 @@ type DeleteTaskRequest struct {
 // @Param request body DeleteTaskRequest true "删除任务参数"
 // @Success 200 {object} response.Response "删除成功"
 // @Failure 400 {object} response.Response "invalid request"
+// @Failure 401 {object} response.Response "Authorization header required / Authorization header format must be Bearer <token> / Invalid or expired token"
 // @Failure 500 {object} response.Response "删除任务失败"
-// @Failure 401 {object} response.Response "Authorization header required"
-// @Failure 401 {object} response.Response "Authorization header format must be Bearer <token>"
-// @Failure 401 {object} response.Response "Invalid or expired token"
 // @Router /api/v1/tasks/delete [delete]
 func (tc *TaskController) DeleteTask(c *gin.Context) {
 	var req DeleteTaskRequest

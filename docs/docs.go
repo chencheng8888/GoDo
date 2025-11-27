@@ -142,13 +142,13 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "invalid request",
+                        "description": "Bad request: invalid request",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
-                        "description": "Invalid or expired token",
+                        "description": "Unauthorized: your request may be unauthorized; Authorization header required; Authorization header must be Bearer \u003ctoken\u003e; Invalid or expired token",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -199,7 +199,7 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Invalid or expired token",
+                        "description": "Authorization header required / Authorization header format must be Bearer \u003ctoken\u003e / Invalid or expired token",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -262,19 +262,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "file not found",
+                        "description": "Bad Request: invalid request; file not found",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
-                        "description": "your user account may have been deleted",
+                        "description": "Unauthorized: your request may be unauthorized; Authorization header required; Authorization header format must be Bearer \u003ctoken\u003e; Invalid or expired token; your user account may have been deleted",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
-                        "description": "delete file failed",
+                        "description": "Internal Server Error: delete file failed",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -289,7 +289,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "根据JWT token中的用户名获取该用户的所有任务",
+                "description": "根据 JWT token 中的用户名获取该用户的所有任务",
                 "consumes": [
                     "application/json"
                 ],
@@ -320,7 +320,7 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Invalid or expired token",
+                        "description": "Unauthorized:",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -366,13 +366,13 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Invalid or expired token",
+                        "description": "Unauthorized: your request may be unauthorized; Authorization header required; Authorization header must be Bearer \u003ctoken\u003e; Invalid or expired token",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
-                        "description": "search failed",
+                        "description": "Internal Server Error: search failed",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -427,19 +427,19 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "file number limit exceeded",
+                        "description": "Bad Request: file not uploaded; file too large; file number limit exceeded",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
                     },
                     "401": {
-                        "description": "your request may be unauthorized",
+                        "description": "Unauthorized: Authorization header required; wrong format (must be Bearer \u003ctoken\u003e); invalid or expired token; your request may be unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
                     },
                     "500": {
-                        "description": "search failed",
+                        "description": "Server Error: file save failed; search failed",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
