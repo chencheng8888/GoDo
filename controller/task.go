@@ -43,7 +43,8 @@ type TaskController struct {
 	singleFileSizeLimit int
 }
 
-func NewTaskController(s scheduler.Scheduler, generator id_generator.TaskIDGenerator, cf *config.ScheduleConfig, fileConf *config.FileConfig) (*TaskController, error) {
+func NewTaskController(s scheduler.Scheduler, generator id_generator.TaskIDGenerator, cf *config.ScheduleConfig, fileConf *config.FileConfig,
+	userDao *dao.UserDao, userFileDao *dao.UserFileDao, log *zap.SugaredLogger) (*TaskController, error) {
 	err := pkg.CreateDirIfNotExist(cf.WorkDir)
 	if err != nil {
 		return nil, err
@@ -55,6 +56,9 @@ func NewTaskController(s scheduler.Scheduler, generator id_generator.TaskIDGener
 		generator:           generator,
 		fileNumberLimit:     fileConf.NumberLimit,
 		singleFileSizeLimit: fileConf.SingleFileSizeLimit,
+		userDao:             userDao,
+		userFileDao:         userFileDao,
+		log:                 log,
 	}, nil
 }
 

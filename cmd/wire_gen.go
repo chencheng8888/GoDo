@@ -53,7 +53,8 @@ func WireNewApp(configConfig *config.Config) (*App, error) {
 	schedulerScheduler := scheduler.NewScheduler(cronScheduler)
 	taskIDGenerator := id_generator.NewTaskIDGenerator()
 	fileConfig := config.GetFileConfig(configConfig)
-	taskController, err := controller.NewTaskController(schedulerScheduler, taskIDGenerator, scheduleConfig, fileConfig)
+	userFileDao := dao.NewUserFileDao(db)
+	taskController, err := controller.NewTaskController(schedulerScheduler, taskIDGenerator, scheduleConfig, fileConfig, userDao, userFileDao, sugaredLogger)
 	if err != nil {
 		return nil, err
 	}

@@ -14,8 +14,8 @@ type TaskInfo struct {
 	Description   string    `gorm:"column:description"`
 	JobType       string    `gorm:"column:job_type"`
 	Job           string    `gorm:"column:job;"`
-	CreatedAt     time.Time `gorm:"column:created_at"`
-	UpdatedAt     time.Time `gorm:"column:updated_at"`
+	CreatedAt     time.Time `gorm:"column:created_at;not null;autoCreateTime"`
+	UpdatedAt     time.Time `gorm:"column:updated_at;not null;autoUpdateTime"`
 }
 
 func (t *TaskInfo) TableName() string {
