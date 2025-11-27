@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/chencheng8888/GoDo/dao"
 	"github.com/chencheng8888/GoDo/dao/model"
+	"github.com/chencheng8888/GoDo/pkg"
 	"go.uber.org/zap"
 )
 
@@ -38,16 +39,24 @@ func NewTaskLogMiddleware(log *zap.SugaredLogger, taskLogDao *dao.TaskLogDao) *T
 func (tl *TaskLogMiddleware) Handler(next Executor) Executor {
 	return func(ctx context.Context, t Task) TaskResult {
 		result := next(ctx, t)
+		output, err := pkg.DetectAndConvertToUTF8([]byte(result.Output))
+		if err != nil {
+			tl.log.Errorf("failed to convert output to utf8: %v", err)
+		}
+		errOutput, err := pkg.DetectAndConvertToUTF8([]byte(result.ErrOutput))
+		if err != nil {
+			tl.log.Errorf("failed to convert output to utf8: %v", err)
+		}
 		taskLog := model.TaskLog{
 			TaskId:    t.id,
 			Name:      t.taskName,
 			Content:   t.f.ToJson(),
-			Output:    result.Output,
-			ErrOutput: result.ErrOutput,
+			Output:    output,
+			ErrOutput: errOutput,
 			StartTime: result.StartTime,
 			EndTime:   result.EndTime,
 		}
-		err := tl.taskLogDao.CreateTaskLog(&taskLog)
+		err = tl.taskLogDao.CreateTaskLog(&taskLog)
 		if err != nil {
 			tl.log.Errorf("failed to create task log for task %+v: %v", taskLog, err)
 		}
