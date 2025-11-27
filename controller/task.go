@@ -322,9 +322,20 @@ func (tc *TaskController) AddShellTask(c *gin.Context) {
 		return
 	}
 
+	user, err := tc.userDao.GetUser(name)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, response.Error(response.InvalidRequestCode, "your request may be unauthorized"))
+		return
+	}
+
 	var req AddShellTaskRequest
 	if err := c.ShouldBindBodyWithJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, response.Error(response.InvalidRequestCode, fmt.Sprintf("%s:%s", response.InvalidRequestMsg, err.Error())))
+		return
+	}
+
+	if !user.UseShell && req.UseShell {
+		c.JSON(http.StatusBadRequest, response.Error(response.InvalidRequestCode, fmt.Sprintf("%s:%s", response.InvalidRequestMsg, "the user is not allowed to use shell to run commands")))
 		return
 	}
 
@@ -333,7 +344,7 @@ func (tc *TaskController) AddShellTask(c *gin.Context) {
 	taskID := tc.generator.Generate(TaskIDPrefix)
 
 	task := domain.NewTask(taskID, req.TaskName, name, req.ScheduledTime, req.Description, shellJob)
-	err := tc.scheduler.AddTask(task)
+	err = tc.scheduler.AddTask(task)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.Error(response.InvalidRequestCode, fmt.Sprintf("%s:%s", response.InvalidRequestMsg, err.Error())))
 		return

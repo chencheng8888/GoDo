@@ -41,14 +41,14 @@ func NewAuthService(userDao *dao.UserDao, cf *config.JwtConfig) *AuthService {
 }
 
 func (a *AuthService) Authenticate(username, password string) error {
-	pwd, err := a.userDao.GetUser(username)
+	user, err := a.userDao.GetUser(username)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return fmt.Errorf("user %s not found", username)
 	} else if err != nil {
 		return err
 	}
 
-	if pwd != password {
+	if user.Password != password {
 		return fmt.Errorf("user %s password error", username)
 	}
 	return nil
