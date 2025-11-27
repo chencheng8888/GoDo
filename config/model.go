@@ -41,7 +41,7 @@ type JwtConfig struct {
 }
 
 type FileConfig struct {
-	NumberLimit         int `mapstructure:"number_limit"`           // 上传文件数量限制,单位:20
+	NumberLimit         int `mapstructure:"number_limit"`           // 上传文件数量限制
 	SingleFileSizeLimit int `mapstructure:"single_file_size_limit"` // 上传单个文件大小限制,单位:MB
 }
 

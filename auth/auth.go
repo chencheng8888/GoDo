@@ -36,7 +36,7 @@ func NewAuthService(userDao *dao.UserDao, cf *config.JwtConfig) *AuthService {
 	return &AuthService{
 		userDao:         userDao,
 		jwtSecret:       cf.Secret,
-		tokenExpiration: time.Duration(cf.TokenExpiration) * time.Second,
+		tokenExpiration: time.Duration(cf.TokenExpiration) * time.Minute,
 	}
 }
 

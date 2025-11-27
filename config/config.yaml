@@ -28,6 +28,13 @@ log:
   compress: true         # 是否压缩旧的日志文件
   stdout: true           # 是否同时输出到控制台
 
+jwt:
+  secret: "your_jwt_secret"
+  token_expiration: 43200 # 单位min
+file:
+  number_limit: 20
+  single_file_size_limit: 30 # 单位MB
+
 # Cron 表达式说明（当 with_seconds 为 true 时）:
 # ┌─────────── 秒 (0-59)
 # │ ┌───────── 分 (0-59)
