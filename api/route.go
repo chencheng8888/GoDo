@@ -24,6 +24,7 @@ func (f RouteInitFunc) InitRoute(r *gin.Engine) {
 
 func NewGinEngine(authService *auth.AuthService, authController *controller.AuthController, taskController *controller.TaskController, logger *zap.SugaredLogger) *gin.Engine {
 	r := gin.New()
+	r.MaxMultipartMemory = 100 << 20
 	r.Use(ginzap.Ginzap(logger.Desugar(), time.RFC3339, true))
 	r.Use(ginzap.RecoveryWithZap(logger.Desugar(), true))
 	r.Use(cors.New(cors.Config{
