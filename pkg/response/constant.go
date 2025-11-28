@@ -20,6 +20,7 @@ const (
 	FileTooLargeCode
 	FileNumberLimitCode
 	SearchFailedCode
+	TaskRunFailedCode
 )
 
 const (
@@ -37,4 +38,5 @@ const (
 	FileTooLargeMsg                = "file too large"
 	FileNumberLimitMsg             = "file number limit exceeded"
 	SearchFailedMsg                = "search failed"
+	TaskRunFailedMsg               = "task run failed"
 )

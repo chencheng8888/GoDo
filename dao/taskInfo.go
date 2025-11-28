@@ -26,6 +26,12 @@ func (t *TaskInfoDao) ListTaskInfo() ([]*model.TaskInfo, error) {
 	return taskInfos, err
 }
 
+func (t *TaskInfoDao) GetTaskInfo(userName, taskId string) (*model.TaskInfo, error) {
+	var taskInfo model.TaskInfo
+	err := t.db.Where("owner_name = ? and task_id = ?", userName, taskId).First(&taskInfo).Error
+	return &taskInfo, err
+}
+
 func (t *TaskInfoDao) GetTaskInfosByOwnerName(ownerName string) ([]*model.TaskInfo, error) {
 	var taskInfos []*model.TaskInfo
 	err := t.db.Where("owner_name = ?", ownerName).Find(&taskInfos).Error

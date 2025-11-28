@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	"github.com/chencheng8888/GoDo/scheduler/domain"
 	"github.com/chencheng8888/GoDo/scheduler/implement"
 	"github.com/google/wire"
@@ -17,6 +18,7 @@ type Scheduler interface {
 	Start()
 	Stop()
 	InitializeTasks()
+	RunTask(ctx context.Context, task domain.Task)
 }
 
 func NewScheduler(cronScheduler *implement.CronScheduler) Scheduler {

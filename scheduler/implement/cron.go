@@ -208,6 +208,10 @@ func (s *CronScheduler) InitializeTasks() {
 	s.log.Infof("✅initialize tasks from db finished")
 }
 
+func (s *CronScheduler) RunTask(ctx context.Context, task domain.Task) {
+	s.executor(ctx, task)
+}
+
 func newModel(task domain.Task) *model.TaskInfo {
 	return &model.TaskInfo{
 		TaskId:        task.GetID(),

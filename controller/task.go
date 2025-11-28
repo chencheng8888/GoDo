@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/chencheng8888/GoDo/auth"
@@ -376,8 +377,7 @@ func (tc *TaskController) AddShellTask(c *gin.Context) {
 // DeleteTaskRequest 删除任务请求
 // @Description 删除任务的请求参数
 type DeleteTaskRequest struct {
-	UserName string `json:"user_name" binding:"required" example:"admin"` // 任务拥有者
-	TaskID   string `json:"task_id"  binding:"required" example:"12345"`  // 任务ID
+	TaskID string `json:"task_id"  binding:"required" example:"12345"` // 任务ID
 }
 
 // DeleteTask 删除任务
@@ -390,17 +390,23 @@ type DeleteTaskRequest struct {
 // @Param request body DeleteTaskRequest true "删除任务参数"
 // @Success 200 {object} response.Response "删除成功"
 // @Failure 400 {object} response.Response "invalid request"
-// @Failure 401 {object} response.Response "Authorization header required / Authorization header format must be Bearer <token> / Invalid or expired token"
+// @Failure 401 {object} response.Response "Authorization header required / Authorization header format must be Bearer <token> / Invalid or expired token / your request may be unauthorized"
 // @Failure 500 {object} response.Response "删除任务失败"
 // @Router /api/v1/tasks/delete [delete]
 func (tc *TaskController) DeleteTask(c *gin.Context) {
+	name, ok := auth.GetUsernameFromContext(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, response.Error(response.InvalidRequestCode, "your request may be unauthorized"))
+		return
+	}
+
 	var req DeleteTaskRequest
 	if err := c.ShouldBindBodyWithJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, response.Error(response.InvalidRequestCode, fmt.Sprintf("%s:%s", response.InvalidRequestMsg, err.Error())))
 		return
 	}
 
-	err := tc.scheduler.RemoveTask(req.UserName, req.TaskID)
+	err := tc.scheduler.RemoveTask(name, req.TaskID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.Error(response.DeleteTaskFailedCode, fmt.Sprintf("%s:%s", response.DeleteTaskFailedMsg, err.Error())))
 		return
@@ -416,8 +422,8 @@ type ListTaskLogRequest struct {
 
 // ListTaskLogResponseData 查询任务日志返回
 type ListTaskLogResponseData struct {
-	Total int64           `json:"total" example:"100"`
-	List  []model.TaskLog `json:"list"`
+	Total int64           `form:"total" json:"total" example:"100"`
+	List  []model.TaskLog `form:"total" json:"list"`
 }
 
 // ListTaskLog 查询任务日志
@@ -429,7 +435,6 @@ type ListTaskLogResponseData struct {
 // @Security BearerAuth
 // @Param page query int true "页码"
 // @Param page_size query int true "每页条数"
-// @Param user_name query string false "用户名，不传则使用 token 中的用户"
 // @Success 200 {object} response.Response{data=ListTaskLogResponseData} "success"
 // @Failure 400 {object} response.Response "Bad request"
 // @Failure 401 {object} response.Response "Authorization header required / Authorization header format must be Bearer <token> / Invalid or expired token"
@@ -465,4 +470,65 @@ func (tc *TaskController) ListTaskLog(c *gin.Context) {
 		Total: total,
 		List:  logList,
 	}))
+}
+
+type RunTaskRequest struct {
+	TaskID string `form:"task_id" json:"task_id" binding:"required" example:"12345"`
+}
+
+// RunTask 运行任务
+// @Summary 运行任务
+// @Description 运行任务
+// @Tags 任务管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param task_id query string true "任务id"
+// @Success 200 {object} response.Response{data=nil} "success"
+// @Failure 400 {object} response.Response "Bad request"
+// @Failure 401 {object} response.Response "Authorization header required / Authorization header format must be Bearer <token> / Invalid or expired token"
+// @Failure 500 {object} response.Response "search failed / task run failed"
+// @Router /api/v1/tasks/run [post]
+func (tc *TaskController) RunTask(c *gin.Context) {
+	name, ok := auth.GetUsernameFromContext(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, response.Error(response.InvalidRequestCode, "your request may be unauthorized"))
+		return
+	}
+
+	var req RunTaskRequest
+
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.Error(response.InvalidRequestCode, fmt.Sprintf("%s:%s", response.InvalidRequestMsg, err.Error())))
+		return
+	}
+
+	info, err := tc.taskInfoDao.GetTaskInfo(name, req.TaskID)
+	if err != nil {
+		code := http.StatusInternalServerError
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			code = http.StatusBadRequest
+		}
+
+		c.JSON(code, response.Error(response.SearchFailedCode, response.SearchFailedMsg))
+		return
+	}
+
+	task, err := domain.NewTaskFromModel(info)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, response.Error(response.InvalidRequestCode, response.InvalidRequestMsg))
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	tc.scheduler.RunTask(ctx, task)
+
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		c.JSON(http.StatusInternalServerError, response.Error(response.TaskRunFailedCode, response.TaskRunFailedMsg))
+		return
+	}
+
+	c.JSON(http.StatusOK, response.Success(nil))
 }

@@ -64,13 +64,8 @@ definitions:
         description: 任务ID
         example: "12345"
         type: string
-      user_name:
-        description: 任务拥有者
-        example: admin
-        type: string
     required:
     - task_id
-    - user_name
     type: object
   controller.ListFilesResponseData:
     properties:
@@ -309,7 +304,8 @@ paths:
             $ref: '#/definitions/response.Response'
         "401":
           description: Authorization header required / Authorization header format
-            must be Bearer <token> / Invalid or expired token
+            must be Bearer <token> / Invalid or expired token / your request may be
+            unauthorized
           schema:
             $ref: '#/definitions/response.Response'
         "500":
@@ -438,10 +434,6 @@ paths:
         name: page_size
         required: true
         type: integer
-      - description: 用户名，不传则使用 token 中的用户
-        in: query
-        name: user_name
-        type: string
       produces:
       - application/json
       responses:
@@ -470,6 +462,47 @@ paths:
       security:
       - BearerAuth: []
       summary: 查询任务日志
+      tags:
+      - 任务管理
+  /api/v1/tasks/run:
+    post:
+      consumes:
+      - application/json
+      description: 运行任务
+      parameters:
+      - description: 任务id
+        in: query
+        name: task_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Authorization header required / Authorization header format
+            must be Bearer <token> / Invalid or expired token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: search failed / task run failed
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 运行任务
       tags:
       - 任务管理
   /api/v1/tasks/upload_file:

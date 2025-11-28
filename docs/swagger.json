@@ -199,7 +199,7 @@
                         }
                     },
                     "401": {
-                        "description": "Authorization header required / Authorization header format must be Bearer \u003ctoken\u003e / Invalid or expired token",
+                        "description": "Authorization header required / Authorization header format must be Bearer \u003ctoken\u003e / Invalid or expired token / your request may be unauthorized",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -412,12 +412,6 @@
                         "name": "page_size",
                         "in": "query",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "用户名，不传则使用 token 中的用户",
-                        "name": "user_name",
-                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -453,6 +447,73 @@
                     },
                     "500": {
                         "description": "search failed",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tasks/run": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "运行任务",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "任务管理"
+                ],
+                "summary": "运行任务",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "任务id",
+                        "name": "task_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorization header required / Authorization header format must be Bearer \u003ctoken\u003e / Invalid or expired token",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "search failed / task run failed",
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
@@ -608,19 +669,13 @@
             "description": "删除任务的请求参数",
             "type": "object",
             "required": [
-                "task_id",
-                "user_name"
+                "task_id"
             ],
             "properties": {
                 "task_id": {
                     "description": "任务ID",
                     "type": "string",
                     "example": "12345"
-                },
-                "user_name": {
-                    "description": "任务拥有者",
-                    "type": "string",
-                    "example": "admin"
                 }
             }
         },
