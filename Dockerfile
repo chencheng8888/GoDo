@@ -2,7 +2,7 @@ FROM golang:1.24.4 AS builder
 
 COPY . /src
 
-WORKDIR /src/godo
+WORKDIR /src
 
 RUN GOPROXY=https://goproxy.cn go build -o ./bin/godo ./cmd/
 
