@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/chencheng8888/GoDo/auth"
 	"github.com/chencheng8888/GoDo/dao"
+	"github.com/chencheng8888/GoDo/dao/model"
 	"github.com/chencheng8888/GoDo/pkg/id_generator"
 	"github.com/chencheng8888/GoDo/scheduler"
 	"github.com/chencheng8888/GoDo/scheduler/domain"
@@ -35,16 +36,21 @@ type TaskController struct {
 
 	userFileDao *dao.UserFileDao
 
+	taskLogDao *dao.TaskLogDao
+
+	taskInfoDao *dao.TaskInfoDao
+
 	workDir string
 
 	log *zap.SugaredLogger
 
 	fileNumberLimit     int
 	singleFileSizeLimit int
+	maxTaskNum          int
 }
 
 func NewTaskController(s scheduler.Scheduler, generator id_generator.TaskIDGenerator, cf *config.ScheduleConfig, fileConf *config.FileConfig,
-	userDao *dao.UserDao, userFileDao *dao.UserFileDao, log *zap.SugaredLogger) (*TaskController, error) {
+	userDao *dao.UserDao, userFileDao *dao.UserFileDao, taskLogDao *dao.TaskLogDao, taskInfoDao *dao.TaskInfoDao, log *zap.SugaredLogger) (*TaskController, error) {
 	err := pkg.CreateDirIfNotExist(cf.WorkDir)
 	if err != nil {
 		return nil, err
@@ -58,7 +64,10 @@ func NewTaskController(s scheduler.Scheduler, generator id_generator.TaskIDGener
 		singleFileSizeLimit: fileConf.SingleFileSizeLimit,
 		userDao:             userDao,
 		userFileDao:         userFileDao,
+		taskLogDao:          taskLogDao,
+		taskInfoDao:         taskInfoDao,
 		log:                 log,
+		maxTaskNum:          cf.MaxTaskNum,
 	}, nil
 }
 
@@ -314,6 +323,7 @@ type AddShellTaskResponseData struct {
 // @Success 200 {object} response.Response{data=AddShellTaskResponseData} "success"
 // @Failure 400 {object} response.Response "Bad request: invalid request"
 // @Failure 401 {object} response.Response "Unauthorized: your request may be unauthorized; Authorization header required; Authorization header must be Bearer <token>; Invalid or expired token"
+// @Failure 500 {object} response.Response "search failed"
 // @Router /api/v1/tasks/add_shell_task [post]
 func (tc *TaskController) AddShellTask(c *gin.Context) {
 	name, ok := auth.GetUsernameFromContext(c)
@@ -325,6 +335,17 @@ func (tc *TaskController) AddShellTask(c *gin.Context) {
 	user, err := tc.userDao.GetUser(name)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, response.Error(response.InvalidRequestCode, "your request may be unauthorized"))
+		return
+	}
+
+	cnt, err := tc.taskInfoDao.CountTaskByUserName(name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.Error(response.SearchFailedCode, response.SearchFailedMsg))
+		return
+	}
+
+	if cnt+1 > int64(tc.maxTaskNum) {
+		c.JSON(http.StatusBadRequest, response.Error(response.InvalidRequestCode, fmt.Sprintf("%s:%s", response.InvalidRequestMsg, "the user has reached the maximum number of tasks allowed")))
 		return
 	}
 
@@ -385,4 +406,63 @@ func (tc *TaskController) DeleteTask(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, response.Success(nil))
+}
+
+// ListTaskLogRequest 查询任务日志请求
+type ListTaskLogRequest struct {
+	Page     int `form:"page" binding:"required,min=1" example:"1"`               // 页码
+	PageSize int `form:"page_size" binding:"required,min=1,max=100" example:"10"` // 每页条数
+}
+
+// ListTaskLogResponseData 查询任务日志返回
+type ListTaskLogResponseData struct {
+	Total int64           `json:"total" example:"100"`
+	List  []model.TaskLog `json:"list"`
+}
+
+// ListTaskLog 查询任务日志
+// @Summary 查询任务日志
+// @Description 按用户名分页查询任务日志，如果未传 user_name 则默认当前登录用户
+// @Tags 任务管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int true "页码"
+// @Param page_size query int true "每页条数"
+// @Param user_name query string false "用户名，不传则使用 token 中的用户"
+// @Success 200 {object} response.Response{data=ListTaskLogResponseData} "success"
+// @Failure 400 {object} response.Response "Bad request"
+// @Failure 401 {object} response.Response "Authorization header required / Authorization header format must be Bearer <token> / Invalid or expired token"
+// @Failure 500 {object} response.Response "search failed"
+// @Router /api/v1/tasks/logs [get]
+func (tc *TaskController) ListTaskLog(c *gin.Context) {
+	// ---- 获取用户身份 ----
+	name, ok := auth.GetUsernameFromContext(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, response.Error(response.InvalidRequestCode, "your request may be unauthorized"))
+		return
+	}
+
+	// ---- 参数绑定 ----
+	var req ListTaskLogRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(http.StatusBadRequest, response.Error(response.InvalidRequestCode, fmt.Sprintf("%s:%s", response.InvalidRequestMsg, err.Error())))
+		return
+	}
+
+	// 查询当前用户
+	queryUser := name
+
+	// ---- 分页查询数据库 ----
+	logList, total, err := tc.taskLogDao.FindByUserName(queryUser, req.Page, req.PageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.Error(response.SearchFailedCode, response.SearchFailedMsg))
+		return
+	}
+
+	// ---- 返回结果 ----
+	c.JSON(http.StatusOK, response.Success(ListTaskLogResponseData{
+		Total: total,
+		List:  logList,
+	}))
 }

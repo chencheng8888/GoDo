@@ -152,6 +152,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/response.Response"
                         }
+                    },
+                    "500": {
+                        "description": "search failed",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
                     }
                 }
             }
@@ -380,6 +386,86 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/tasks/logs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "按用户名分页查询任务日志，如果未传 user_name 则默认当前登录用户",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "任务管理"
+                ],
+                "summary": "查询任务日志",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页条数",
+                        "name": "page_size",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "用户名，不传则使用 token 中的用户",
+                        "name": "user_name",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/response.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/controller.ListTaskLogResponseData"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Authorization header required / Authorization header format must be Bearer \u003ctoken\u003e / Invalid or expired token",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "search failed",
+                        "schema": {
+                            "$ref": "#/definitions/response.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/tasks/upload_file": {
             "post": {
                 "security": [
@@ -555,6 +641,21 @@ const docTemplate = `{
                 }
             }
         },
+        "controller.ListTaskLogResponseData": {
+            "type": "object",
+            "properties": {
+                "list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.TaskLog"
+                    }
+                },
+                "total": {
+                    "type": "integer",
+                    "example": 100
+                }
+            }
+        },
         "controller.ListTaskResponseData": {
             "description": "任务列表响应数据结构",
             "type": "object",
@@ -640,6 +741,41 @@ const docTemplate = `{
                     "description": "上传后的文件名",
                     "type": "string",
                     "example": "1699123456789-script.sh"
+                }
+            }
+        },
+        "model.TaskLog": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "description": "任务内容，比如 shell 命令或者 Go 函数描述",
+                    "type": "string"
+                },
+                "endTime": {
+                    "description": "任务结束时间",
+                    "type": "string"
+                },
+                "errOutput": {
+                    "description": "任务执行错误输出",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "任务名称",
+                    "type": "string"
+                },
+                "output": {
+                    "description": "任务执行输出",
+                    "type": "string"
+                },
+                "startTime": {
+                    "description": "任务开始时间",
+                    "type": "string"
+                },
+                "taskId": {
+                    "type": "string"
                 }
             }
         },

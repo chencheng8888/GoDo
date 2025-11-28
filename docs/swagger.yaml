@@ -79,6 +79,16 @@ definitions:
           type: string
         type: array
     type: object
+  controller.ListTaskLogResponseData:
+    properties:
+      list:
+        items:
+          $ref: '#/definitions/model.TaskLog'
+        type: array
+      total:
+        example: 100
+        type: integer
+    type: object
   controller.ListTaskResponseData:
     description: 任务列表响应数据结构
     properties:
@@ -141,6 +151,31 @@ definitions:
       file_name:
         description: 上传后的文件名
         example: 1699123456789-script.sh
+        type: string
+    type: object
+  model.TaskLog:
+    properties:
+      content:
+        description: 任务内容，比如 shell 命令或者 Go 函数描述
+        type: string
+      endTime:
+        description: 任务结束时间
+        type: string
+      errOutput:
+        description: 任务执行错误输出
+        type: string
+      id:
+        type: integer
+      name:
+        description: 任务名称
+        type: string
+      output:
+        description: 任务执行输出
+        type: string
+      startTime:
+        description: 任务开始时间
+        type: string
+      taskId:
         type: string
     type: object
   response.Response:
@@ -238,6 +273,10 @@ paths:
           description: 'Unauthorized: your request may be unauthorized; Authorization
             header required; Authorization header must be Bearer <token>; Invalid
             or expired token'
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: search failed
           schema:
             $ref: '#/definitions/response.Response'
       security:
@@ -381,6 +420,56 @@ paths:
       security:
       - BearerAuth: []
       summary: 查询已有文件
+      tags:
+      - 任务管理
+  /api/v1/tasks/logs:
+    get:
+      consumes:
+      - application/json
+      description: 按用户名分页查询任务日志，如果未传 user_name 则默认当前登录用户
+      parameters:
+      - description: 页码
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: 每页条数
+        in: query
+        name: page_size
+        required: true
+        type: integer
+      - description: 用户名，不传则使用 token 中的用户
+        in: query
+        name: user_name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/controller.ListTaskLogResponseData'
+              type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.Response'
+        "401":
+          description: Authorization header required / Authorization header format
+            must be Bearer <token> / Invalid or expired token
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: search failed
+          schema:
+            $ref: '#/definitions/response.Response'
+      security:
+      - BearerAuth: []
+      summary: 查询任务日志
       tags:
       - 任务管理
   /api/v1/tasks/upload_file:

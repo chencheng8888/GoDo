@@ -29,6 +29,8 @@ type ScheduleConfig struct {
 	WithSeconds    bool   `mapstructure:"with_seconds"`    // 是否启用秒级调度
 	WorkDir        string `mapstructure:"work_dir"`        // 任务工作目录
 	GoroutinesSize int    `mapstructure:"goroutines_size"` // 任务执行协程池大小
+
+	MaxTaskNum int `mapstructure:"max_task_num"` // 最大任务数量限制
 }
 
 type DBConfig struct {

@@ -81,6 +81,7 @@ func InitTaskRoute(authService *auth.AuthService, taskController *controller.Tas
 			g.GET("/list_files", taskController.ListFiles)
 			g.POST("/add_shell_task", taskController.AddShellTask)
 			g.DELETE("/delete", taskController.DeleteTask)
+			g.GET("/logs", taskController.ListTaskLog)
 		}
 	})
 }

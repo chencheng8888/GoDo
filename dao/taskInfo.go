@@ -40,3 +40,11 @@ func (t *TaskInfoDao) DeleteTaskInfoByTaskId(userName string, taskId string) err
 	}
 	return res.Error
 }
+
+func (t *TaskInfoDao) CountTaskByUserName(userName string) (int64, error) {
+	var count int64
+	err := t.db.Model(&model.TaskInfo{}).
+		Where("owner_name = ?", userName).
+		Count(&count).Error
+	return count, err
+}
