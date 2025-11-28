@@ -187,13 +187,19 @@ func (tc *TaskController) UploadFile(c *gin.Context) {
 	fileName := fmt.Sprintf("%d-%s", time.Now().UnixMilli(), filepath.Base(file.Filename))
 	savePath := filepath.Join(tc.workDir, fileName)
 
-	err = tc.userFileDao.AddUserFileRecord(name, fileName, file.Size)
+	err = c.SaveUploadedFile(file, savePath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.Error(response.FileSaveFailedCode, response.FileSaveFailedMsg))
 		return
 	}
 
-	err = c.SaveUploadedFile(file, savePath, 0755)
+	err = os.Chmod(savePath, 0755)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, response.Error(response.FileSaveFailedCode, response.FileSaveFailedMsg))
+		return
+	}
+
+	err = tc.userFileDao.AddUserFileRecord(name, fileName, file.Size)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, response.Error(response.FileSaveFailedCode, response.FileSaveFailedMsg))
 		return
