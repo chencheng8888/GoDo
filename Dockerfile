@@ -23,7 +23,7 @@ WORKDIR /app
 EXPOSE 8080
 
 VOLUME /config
-VOLUME /uploads
-VOLUME /logs
+VOLUME /app/uploads
+VOLUME /app/logs
 
 CMD ["./godo", "-conf", "/config/config.yaml"]

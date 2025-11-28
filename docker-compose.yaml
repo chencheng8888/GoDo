@@ -8,7 +8,7 @@ services:
     network_mode: "host"           # 使用主机网络
     volumes:
       - ./config.yaml:/config/config.yaml   # ← 映射单个文件
-      - ./uploads:/uploads                 # ← 映射目录
-      - ./logs:/logs                 # ← 映射目录
+      - ./uploads:/app/uploads                 # ← 映射目录
+      - ./logs:/app/logs                 # ← 映射目录
     environment:
       TZ: "Asia/Shanghai"
