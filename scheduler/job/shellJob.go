@@ -30,8 +30,23 @@ func (s *ShellJob) Content() string {
 	if s == nil {
 		return ""
 	}
-	res, _ := json.Marshal(s)
-	return string(res)
+
+	type result struct {
+		Command  string   `json:"command"`   // shell 命令
+		Args     []string `json:"args"`      // 命令参数
+		UseShell bool     `json:"use_shell"` //是否通过系统默认 Shell 执行 (true: 可以运行内建命令和脚本, false: 直接运行可执行文件)
+		TimeOut  string   `json:"timeout"`
+	}
+
+	res := result{
+		Command:  s.Command,
+		Args:     s.Args,
+		UseShell: s.UseShell,
+		TimeOut:  s.Timeout.String(),
+	}
+
+	resStr, _ := json.Marshal(res)
+	return string(resStr)
 }
 
 func NewShellJob(useShell bool, timeOut time.Duration, workDir, command string, args ...string) *ShellJob {
