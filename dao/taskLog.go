@@ -17,7 +17,7 @@ func (t *TaskLogDao) CreateTaskLog(taskLog *model.TaskLog) error {
 	return t.db.Create(taskLog).Error
 }
 
-func (t *TaskLogDao) FindByUserName(userName string, page, pageSize int) ([]model.TaskLog, int64, error) {
+func (t *TaskLogDao) FindByUserName(ownerName string, page, pageSize int) ([]model.TaskLog, int64, error) {
 	var (
 		logs  []model.TaskLog
 		total int64
@@ -25,19 +25,21 @@ func (t *TaskLogDao) FindByUserName(userName string, page, pageSize int) ([]mode
 
 	offset := (page - 1) * pageSize
 
-	query := t.db.Model(&model.TaskLog{}).
-		Where("name = ?", userName)
+	// 构建 JOIN 查询（不加载 TaskInfo，只 join 获取 owner_name 筛选条件）
+	query := t.db.Table("task_logs tl").
+		Joins("JOIN task_infos ti ON tl.task_id = ti.task_id").
+		Where("ti.owner_name = ?", ownerName)
 
-	// 查询总条数
+	// 查询总数
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	// 分页 + 按 start_time 逆序排序
+	// 分页查询 + 排序
 	err := query.
+		Order("tl.start_time DESC").
 		Offset(offset).
 		Limit(pageSize).
-		Order("start_time DESC").
 		Find(&logs).Error
 
 	if err != nil {

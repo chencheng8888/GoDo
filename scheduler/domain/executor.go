@@ -13,7 +13,7 @@ func BaseExecutor(ctx context.Context, t Task) TaskResult {
 	start := time.Now()
 
 	var (
-		panicMsg = "no panic occurred"
+		panicMsg = ""
 	)
 
 	func() {
@@ -24,11 +24,19 @@ func BaseExecutor(ctx context.Context, t Task) TaskResult {
 		}()
 		t.f.Run(ctx)
 	}()
+
+	errOutput := readChannel(t.f.ErrOutput())
+
+	if panicMsg != "" {
+		panicMsg = "Panic occurred: " + panicMsg
+		errOutput = strings.Join([]string{panicMsg, errOutput}, ";")
+	}
+
 	return TaskResult{
 		StartTime: start,
 		EndTime:   time.Now(),
 		Output:    readChannel(t.f.Output()),
-		ErrOutput: strings.Join([]string{panicMsg, readChannel(t.f.ErrOutput())}, ";"),
+		ErrOutput: errOutput,
 	}
 }
 
