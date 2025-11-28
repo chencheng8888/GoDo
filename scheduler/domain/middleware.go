@@ -50,7 +50,7 @@ func (tl *TaskLogMiddleware) Handler(next Executor) Executor {
 		taskLog := model.TaskLog{
 			TaskId:    t.id,
 			Name:      t.taskName,
-			Content:   t.f.ToJson(),
+			Content:   t.f.Content(),
 			Output:    output,
 			ErrOutput: errOutput,
 			StartTime: result.StartTime,
