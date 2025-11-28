@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  godo:
+    image: godo:v1         # 或者使用 build 构建（见下方）
+    container_name: godo
+    restart: always
+    ports:
+      - "8080:8080"            # 映射主机端口 → 容器端口
+    volumes:
+      - ./config.yaml:/config/config.yaml   # ← 映射单个文件
+      - ./uploads:/uploads                 # ← 映射目录
+      - ./logs:/logs                 # ← 映射目录
+    environment:
+      TZ: "Asia/Shanghai"
