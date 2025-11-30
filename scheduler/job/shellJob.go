@@ -151,11 +151,13 @@ func (s *ShellJob) ErrOutput() <-chan string {
 func (s *ShellJob) ToJson() string {
 	type Alias ShellJob // 防止递归调用
 	res, _ := json.Marshal(&struct {
-		WorkDir string `json:"work_dir"`
+		WorkDir  string `json:"work_dir"`
+		UserName string `json:"user_name"`
 		*Alias
 	}{
-		WorkDir: s.workDir,
-		Alias:   (*Alias)(s),
+		WorkDir:  s.workDir,
+		UserName: s.userName,
+		Alias:    (*Alias)(s),
 	})
 	return string(res)
 }
@@ -167,7 +169,8 @@ func (s *ShellJob) UnmarshalFromJson(jsonStr string) error {
 
 	type Alias ShellJob
 	aux := &struct {
-		WorkDir string `json:"work_dir"`
+		WorkDir  string `json:"work_dir"`
+		UserName string `json:"user_name"`
 		*Alias
 	}{
 		Alias: (*Alias)(s),
@@ -176,6 +179,7 @@ func (s *ShellJob) UnmarshalFromJson(jsonStr string) error {
 		return err
 	}
 	s.workDir = aux.WorkDir
+	s.userName = aux.UserName
 	s.output = make(chan string, 100)
 	s.errOutput = make(chan string, 100)
 	return nil
