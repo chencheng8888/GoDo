@@ -185,7 +185,15 @@ func (tc *TaskController) UploadFile(c *gin.Context) {
 	}
 
 	fileName := fmt.Sprintf("%d-%s", time.Now().UnixMilli(), filepath.Base(file.Filename))
-	savePath := filepath.Join(tc.workDir, fileName)
+
+	dir := filepath.Join(tc.workDir, name)
+	err = pkg.CreateDirIfNotExist(dir)
+	if err != nil {
+		tc.log.Errorf("create dir failed : dir is %v, err: %v", dir, err)
+		c.JSON(http.StatusInternalServerError, response.Error(response.FileSaveFailedCode, response.FileSaveFailedMsg))
+		return
+	}
+	savePath := filepath.Join(tc.workDir, name, fileName)
 
 	err = c.SaveUploadedFile(file, savePath)
 	if err != nil {
@@ -254,7 +262,16 @@ func (tc *TaskController) DeleteFile(c *gin.Context) {
 		return
 	}
 
-	fullPath := filepath.Join(tc.workDir, req.FileName)
+	dir := filepath.Join(tc.workDir, name)
+
+	err = pkg.CreateDirIfNotExist(dir)
+	if err != nil {
+		tc.log.Errorf("failed to create user directory [%v],user:%v,error:%v", dir, name, err)
+		c.JSON(http.StatusInternalServerError, response.Error(response.DeleteFileFailedCode, response.DeleteFileFailedMsg))
+		return
+	}
+
+	fullPath := filepath.Join(dir, req.FileName)
 
 	err = os.Remove(fullPath)
 	if err != nil {
@@ -367,7 +384,7 @@ func (tc *TaskController) AddShellTask(c *gin.Context) {
 		return
 	}
 
-	shellJob := job.NewShellJob(req.UseShell, time.Duration(req.Timeout)*time.Second, tc.workDir, req.Command, req.Args...)
+	shellJob := job.NewShellJob(req.UseShell, time.Duration(req.Timeout)*time.Second, tc.workDir, name, req.Command, req.Args...)
 
 	taskID := tc.generator.Generate(TaskIDPrefix)
 

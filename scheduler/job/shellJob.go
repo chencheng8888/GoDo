@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/chencheng8888/GoDo/pkg"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -24,6 +26,8 @@ type ShellJob struct {
 	errOutput chan string   // 错误输出
 
 	workDir string // 工作目录
+
+	userName string // 用户名
 }
 
 func (s *ShellJob) Content() string {
@@ -49,7 +53,7 @@ func (s *ShellJob) Content() string {
 	return string(resStr)
 }
 
-func NewShellJob(useShell bool, timeOut time.Duration, workDir, command string, args ...string) *ShellJob {
+func NewShellJob(useShell bool, timeOut time.Duration, workDir, userName, command string, args ...string) *ShellJob {
 	return &ShellJob{
 		Command:   command,
 		Args:      args,
@@ -58,6 +62,7 @@ func NewShellJob(useShell bool, timeOut time.Duration, workDir, command string, 
 		output:    make(chan string, 100),
 		errOutput: make(chan string, 100),
 		workDir:   workDir,
+		userName:  userName,
 	}
 }
 
@@ -101,8 +106,17 @@ func (s *ShellJob) Run(ctx context.Context) {
 		cmd = exec.CommandContext(shellCtx, s.Command, s.Args...)
 	}
 
-	if len(s.workDir) > 0 {
-		cmd.Dir = s.workDir
+	if len(s.workDir) > 0 && len(s.userName) > 0 {
+		dir := filepath.Join(s.workDir, s.userName)
+		err := pkg.CreateDirIfNotExist(dir)
+		if err != nil {
+			s.errOutput <- fmt.Sprintf("dir not found")
+			return
+		}
+		cmd.Dir = dir
+	} else {
+		s.errOutput <- fmt.Sprintf("your user name is empty")
+		return
 	}
 
 	var stdoutBuf, stderrBuf bytes.Buffer
