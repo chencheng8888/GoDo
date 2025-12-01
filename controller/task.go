@@ -255,7 +255,8 @@ func (tc *TaskController) DeleteFile(c *gin.Context) {
 
 	err = tc.userFileDao.DeleteUserFileRecord(name, req.FileName)
 	if errors.Is(err, dao.UserFileNotFoundErr) {
-		c.JSON(http.StatusBadRequest, response.Error(response.FileNotFoundCode, response.FileNotFoundMsg))
+		tc.log.Errorf("the file record [%v] to be deleted does not exist in database,user:%v", req.FileName, name)
+		c.JSON(http.StatusOK, response.Success(nil))
 		return
 	} else if err != nil {
 		c.JSON(http.StatusInternalServerError, response.Error(response.DeleteFileFailedCode, response.DeleteFileFailedMsg))
@@ -267,7 +268,7 @@ func (tc *TaskController) DeleteFile(c *gin.Context) {
 	err = pkg.CreateDirIfNotExist(dir)
 	if err != nil {
 		tc.log.Errorf("failed to create user directory [%v],user:%v,error:%v", dir, name, err)
-		c.JSON(http.StatusInternalServerError, response.Error(response.DeleteFileFailedCode, response.DeleteFileFailedMsg))
+		c.JSON(http.StatusOK, response.Success(nil))
 		return
 	}
 
@@ -277,6 +278,8 @@ func (tc *TaskController) DeleteFile(c *gin.Context) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			tc.log.Errorf("the file [%v] to be deleted does not exist,user:%v", req.FileName, name)
+			c.JSON(http.StatusOK, response.Success(nil))
+			return
 		} else {
 			tc.log.Errorf("failed to delete file [%v],user:%v,error:%v", req.FileName, name, err)
 		}
