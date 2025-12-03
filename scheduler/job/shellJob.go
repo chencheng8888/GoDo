@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/chencheng8888/GoDo/pkg"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/chencheng8888/GoDo/pkg"
 )
 
 const (
@@ -110,12 +111,12 @@ func (s *ShellJob) Run(ctx context.Context) {
 		dir := filepath.Join(s.workDir, s.userName)
 		err := pkg.CreateDirIfNotExist(dir)
 		if err != nil {
-			s.errOutput <- fmt.Sprintf("dir not found")
+			s.errOutput <- "dir not found"
 			return
 		}
 		cmd.Dir = dir
 	} else {
-		s.errOutput <- fmt.Sprintf("your user name is empty")
+		s.errOutput <- "your user name is empty"
 		return
 	}
 
