@@ -1,4 +1,4 @@
-package implement
+package scheduler
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 	"github.com/chencheng8888/GoDo/config"
 	"github.com/chencheng8888/GoDo/dao"
 	"github.com/chencheng8888/GoDo/pkg/log"
-	"github.com/chencheng8888/GoDo/scheduler/domain"
 	"github.com/panjf2000/ants/v2"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/zap"
@@ -32,7 +31,7 @@ type CronScheduler struct {
 
 	mu sync.Mutex
 
-	executor domain.Executor
+	executor Executor
 
 	log         *zap.SugaredLogger
 	taskInfoDao *dao.TaskInfoDao
@@ -44,7 +43,7 @@ type CronScheduler struct {
 	cancelFunc context.CancelFunc
 }
 
-func NewCronScheduler(conf *config.ScheduleConfig, logMiddleware *domain.LogMiddleware, taskLogMiddleware *domain.TaskLogMiddleware, taskInfoDao *dao.TaskInfoDao, logger *zap.SugaredLogger) (*CronScheduler, error) {
+func NewCronScheduler(conf *config.ScheduleConfig, logMiddleware *LogMiddleware, taskLogMiddleware *TaskLogMiddleware, taskInfoDao *dao.TaskInfoDao, logger *zap.SugaredLogger) (*CronScheduler, error) {
 
 	parser := cron.NewParser(
 		cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow | cron.Descriptor,
@@ -63,7 +62,7 @@ func NewCronScheduler(conf *config.ScheduleConfig, logMiddleware *domain.LogMidd
 		return nil, err
 	}
 
-	executor := domain.Chain(domain.BaseExecutor, logMiddleware.Handler, taskLogMiddleware.Handler)
+	executor := Chain(BaseExecutor, logMiddleware.Handler, taskLogMiddleware.Handler)
 
 	schedulerCtx, cancel := context.WithCancel(context.Background())
 
@@ -82,11 +81,11 @@ func NewCronScheduler(conf *config.ScheduleConfig, logMiddleware *domain.LogMidd
 	return s, nil
 }
 
-func (s *CronScheduler) AddTask(t domain.Task) error {
+func (s *CronScheduler) AddTask(t Task) error {
 	return s.addTask(t, false)
 }
 
-func (s *CronScheduler) addTask(t domain.Task, addCronOnly bool) error {
+func (s *CronScheduler) addTask(t Task, addCronOnly bool) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -128,16 +127,16 @@ func (s *CronScheduler) addTask(t domain.Task, addCronOnly bool) error {
 	return nil
 }
 
-func (s *CronScheduler) ListTasks(userName string) []domain.Task {
-	var tasks []domain.Task
+func (s *CronScheduler) ListTasks(userName string) []Task {
+	var tasks []Task
 	taskInfos, err := s.taskInfoDao.GetTaskInfosByOwnerName(userName)
 	if err != nil {
 		s.log.Errorf("get task info by owner_name=%s error: %s", userName, err)
-		return []domain.Task{}
+		return []Task{}
 	}
 
 	for _, taskInfo := range taskInfos {
-		task, err := domain.NewTaskFromModel(taskInfo)
+		task, err := NewTaskFromModel(taskInfo)
 		if err != nil {
 			s.log.Errorf("new task from model failed: %s", err)
 			continue
@@ -194,7 +193,7 @@ func (s *CronScheduler) InitializeTasks() {
 		s.log.Errorf("initialize tasks:failed to get task info from db: %v", err)
 	}
 	for _, taskInfo := range taskInfos {
-		task, err := domain.NewTaskFromModel(taskInfo)
+		task, err := NewTaskFromModel(taskInfo)
 		if err != nil {
 			s.log.Errorf("initialize tasks:failed to new task from model[%v]: %v", taskInfo, err)
 			continue
@@ -208,11 +207,11 @@ func (s *CronScheduler) InitializeTasks() {
 	s.log.Infof("✅initialize tasks from db finished")
 }
 
-func (s *CronScheduler) RunTask(ctx context.Context, task domain.Task) {
+func (s *CronScheduler) RunTask(ctx context.Context, task Task) {
 	s.executor(ctx, task)
 }
 
-func newModel(task domain.Task) *model.TaskInfo {
+func newModel(task Task) *model.TaskInfo {
 	return &model.TaskInfo{
 		TaskId:        task.GetID(),
 		TaskName:      task.GetTaskName(),

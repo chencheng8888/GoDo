@@ -9,7 +9,6 @@ import (
 	"github.com/chencheng8888/GoDo/dao/model"
 	"github.com/chencheng8888/GoDo/pkg/id_generator"
 	"github.com/chencheng8888/GoDo/scheduler"
-	"github.com/chencheng8888/GoDo/scheduler/domain"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 	"net/http"
@@ -20,7 +19,6 @@ import (
 	"github.com/chencheng8888/GoDo/config"
 	"github.com/chencheng8888/GoDo/pkg"
 	"github.com/chencheng8888/GoDo/pkg/response"
-	"github.com/chencheng8888/GoDo/scheduler/job"
 	"github.com/gin-gonic/gin"
 )
 
@@ -85,7 +83,7 @@ type TaskResponse struct {
 }
 
 // TaskToResponse 将scheduler.Task转换为TaskResponse
-func TaskToResponse(task domain.Task) TaskResponse {
+func TaskToResponse(task scheduler.Task) TaskResponse {
 	return TaskResponse{
 		ID:            task.GetID(),
 		TaskName:      task.GetTaskName(),
@@ -387,11 +385,11 @@ func (tc *TaskController) AddShellTask(c *gin.Context) {
 		return
 	}
 
-	shellJob := job.NewShellJob(req.UseShell, time.Duration(req.Timeout)*time.Second, tc.workDir, name, req.Command, req.Args...)
+	shellJob := scheduler.NewShellJob(req.UseShell, time.Duration(req.Timeout)*time.Second, tc.workDir, name, req.Command, req.Args...)
 
 	taskID := tc.generator.Generate(TaskIDPrefix)
 
-	task := domain.NewTask(taskID, req.TaskName, name, req.ScheduledTime, req.Description, shellJob)
+	task := scheduler.NewTask(taskID, req.TaskName, name, req.ScheduledTime, req.Description, shellJob)
 	err = tc.scheduler.AddTask(task)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.Error(response.InvalidRequestCode, fmt.Sprintf("%s:%s", response.InvalidRequestMsg, err.Error())))
@@ -540,7 +538,7 @@ func (tc *TaskController) RunTask(c *gin.Context) {
 		return
 	}
 
-	task, err := domain.NewTaskFromModel(info)
+	task, err := scheduler.NewTaskFromModel(info)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, response.Error(response.InvalidRequestCode, response.InvalidRequestMsg))
 		return

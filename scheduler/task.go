@@ -1,11 +1,9 @@
-package domain
+package scheduler
 
 import (
 	"fmt"
 	"github.com/chencheng8888/GoDo/dao/model"
 	"time"
-
-	"github.com/chencheng8888/GoDo/scheduler/job"
 )
 
 type Task struct {
@@ -56,8 +54,8 @@ func NewTaskFromModel(taskInfo *model.TaskInfo) (Task, error) {
 
 func GetJob(jobType string) (Job, error) {
 	switch jobType {
-	case job.ShellJobType:
-		return new(job.ShellJob), nil
+	case ShellJobType:
+		return new(ShellJob), nil
 	default:
 		return nil, fmt.Errorf("job type unknown")
 	}

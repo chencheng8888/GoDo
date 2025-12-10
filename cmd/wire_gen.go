@@ -15,8 +15,6 @@ import (
 	"github.com/chencheng8888/GoDo/pkg/id_generator"
 	"github.com/chencheng8888/GoDo/pkg/log"
 	"github.com/chencheng8888/GoDo/scheduler"
-	"github.com/chencheng8888/GoDo/scheduler/domain"
-	"github.com/chencheng8888/GoDo/scheduler/implement"
 )
 
 import (
@@ -42,11 +40,11 @@ func WireNewApp(configConfig *config.Config) (*App, error) {
 	authService := auth.NewAuthService(userDao, jwtConfig)
 	authController := controller.NewAuthController(authService)
 	scheduleConfig := config.GetScheduleConfig(configConfig)
-	logMiddleware := domain.NewLogMiddleware(sugaredLogger)
+	logMiddleware := scheduler.NewLogMiddleware(sugaredLogger)
 	taskLogDao := dao.NewTaskLogDao(db)
-	taskLogMiddleware := domain.NewTaskLogMiddleware(sugaredLogger, taskLogDao)
+	taskLogMiddleware := scheduler.NewTaskLogMiddleware(sugaredLogger, taskLogDao)
 	taskInfoDao := dao.NewTaskInfoDao(db)
-	cronScheduler, err := implement.NewCronScheduler(scheduleConfig, logMiddleware, taskLogMiddleware, taskInfoDao, sugaredLogger)
+	cronScheduler, err := scheduler.NewCronScheduler(scheduleConfig, logMiddleware, taskLogMiddleware, taskInfoDao, sugaredLogger)
 	if err != nil {
 		return nil, err
 	}

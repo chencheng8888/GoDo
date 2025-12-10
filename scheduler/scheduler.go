@@ -2,25 +2,23 @@ package scheduler
 
 import (
 	"context"
-	"github.com/chencheng8888/GoDo/scheduler/domain"
-	"github.com/chencheng8888/GoDo/scheduler/implement"
 	"github.com/google/wire"
 )
 
 var (
-	ProviderSet = wire.NewSet(implement.NewCronScheduler, domain.NewLogMiddleware, domain.NewTaskLogMiddleware, NewScheduler)
+	ProviderSet = wire.NewSet(NewCronScheduler, NewLogMiddleware, NewTaskLogMiddleware, NewScheduler)
 )
 
 type Scheduler interface {
-	AddTask(t domain.Task) error
-	ListTasks(userName string) []domain.Task
+	AddTask(t Task) error
+	ListTasks(userName string) []Task
 	RemoveTask(userName string, taskId string) error
 	Start()
 	Stop()
 	InitializeTasks()
-	RunTask(ctx context.Context, task domain.Task)
+	RunTask(ctx context.Context, task Task)
 }
 
-func NewScheduler(cronScheduler *implement.CronScheduler) Scheduler {
+func NewScheduler(cronScheduler *CronScheduler) Scheduler {
 	return cronScheduler
 }
