@@ -28,23 +28,12 @@ func NewGinEngine(authService *auth.AuthService, authController *controller.Auth
 	r.Use(ginzap.Ginzap(logger.Desugar(), time.RFC3339, true))
 	r.Use(ginzap.RecoveryWithZap(logger.Desugar(), true))
 	r.Use(cors.New(cors.Config{
-		// 允许访问的源（Origin）。可以设置通配符 "*" 允许所有源。
-		AllowOrigins: []string{"*"},
-
-		// 允许的方法：GET, POST, PUT, DELETE, OPTIONS
-		AllowMethods: []string{"GET", "POST", "PUT", "DELETE"},
-
-		// 允许的请求头
-		AllowHeaders: []string{"Origin", "Content-Type", "Authorization"},
-
-		// 是否允许发送 Cookie（跨域携带凭证）
+		AllowOrigins:     []string{"http://localhost:3000", "https://task.ccqianchengsijin.icu/"}, // 修改为你的前端域名
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-
-		// 暴露给客户端的响应头
-		ExposeHeaders: []string{"Content-Length"},
-
-		// 预检请求（Preflight Request, OPTIONS）缓存时间，单位为秒
-		MaxAge: 12 * time.Hour,
+		MaxAge:           12 * time.Hour,
 	}))
 
 	// Swagger文档路由
