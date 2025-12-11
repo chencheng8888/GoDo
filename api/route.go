@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/chencheng8888/GoDo/auth"
+	"github.com/chencheng8888/GoDo/config"
 	"github.com/chencheng8888/GoDo/controller"
 	"github.com/gin-contrib/cors"
 	ginzap "github.com/gin-contrib/zap"
@@ -22,17 +23,18 @@ func (f RouteInitFunc) InitRoute(r *gin.Engine) {
 	f(r)
 }
 
-func NewGinEngine(authService *auth.AuthService, authController *controller.AuthController, taskController *controller.TaskController, logger *zap.SugaredLogger) *gin.Engine {
+func NewGinEngine(authService *auth.AuthService, authController *controller.AuthController,
+	taskController *controller.TaskController, logger *zap.SugaredLogger, cf *config.ServerConfig) *gin.Engine {
 	r := gin.New()
 	r.MaxMultipartMemory = 100 << 20
 	r.Use(ginzap.Ginzap(logger.Desugar(), time.RFC3339, true))
 	r.Use(ginzap.RecoveryWithZap(logger.Desugar(), true))
 	r.Use(cors.New(cors.Config{
-		// 允许访问的源（Origin）。可以设置通配符 "*" 允许所有源。
-		AllowOrigins: []string{"*"},
+		// 允许访问的源（Origin）
+		AllowOrigins: cf.Cors.AllowOrigins,
 
 		// 允许的方法：GET, POST, PUT, DELETE, OPTIONS
-		AllowMethods: []string{"GET", "POST", "PUT", "DELETE"},
+		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 
 		// 允许的请求头
 		AllowHeaders: []string{"Origin", "Content-Type", "Authorization"},

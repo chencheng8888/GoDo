@@ -10,8 +10,13 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Host string `mapstructure:"host"`
-	Port int    `mapstructure:"port"`
+	Host string     `mapstructure:"host"`
+	Port int        `mapstructure:"port"`
+	Cors CorsConfig `mapstructure:"cors"`
+}
+
+type CorsConfig struct {
+	AllowOrigins []string `mapstructure:"allow_origins"`
 }
 
 type LogConfig struct {
