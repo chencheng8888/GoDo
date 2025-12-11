@@ -4,9 +4,6 @@
 server:
   host: 0.0.0.0          # 服务监听地址，0.0.0.0 表示监听所有网络接口
   port: 8080             # HTTP 服务端口
-  cors:
-    allow_origins:
-      - "http://localhost:3000"
 
 # 数据库配置
 db:
